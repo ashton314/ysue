@@ -1,0 +1,36 @@
+#+title: Ysue
+
+ysue - You Should be Using Emacs
+
+* Synopsis
+
+Building:
+
+#+begin_src bash
+  stack build
+#+end_src
+
+Running the program once =ysue= is on your =PATH=:
+
+#+begin_src bash
+  ysue              -- open up an empty buffer
+  ysue <FILENAME>   -- edit a file
+#+end_src
+
+* Description
+
+=ysue= (/yoo/-sway) is a simple text editor implemented in Haskell. Of course, if you intend to do serious text editing, You Should be Using Emacs instead.
+
+* Contributing and Reporting Bugs
+
+This is not a serious project. Really—go use Emacs, Vim, Nano, etc. instead. This is a project for a class and an exercise for me in functional programming in unusual contexts.
+
+If you find a bug, you can report it on the [[https://codeberg.org/ashton314/ysue/issues][issue tracker on Codeberg]]. Better yet, if you have a pull request, either open it [[https://codeberg.org/ashton314/ysue/pulls][on Codeberg]] or fork the project to whatever forge you use, and send me an email at [[mailto:codeberg@wiersdorf.dev][codeberg@wiersdorf.dev]].
+
+* License
+
+MIT License
+
+* Author
+
+Ashton Wiersdorf https://lambdaland.org/
