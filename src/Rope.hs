@@ -9,6 +9,10 @@ len :: Node -> Int
 len (Concat l _ _) = l
 len (Leaf l _) = l
 
+-- Needed for balancing---so happy I get to use this!!!
+fibs :: [Int]
+fibs = 0:1:zipWith (+) fibs (tail fibs)
+
 -- TODO: add guards to make sure the leaves are not too long already
 conc :: Node -> Node -> Node
 conc (Leaf l1 s1) (Leaf l2 s2) = Leaf (l1 + l2) (s1 ++ s2)
