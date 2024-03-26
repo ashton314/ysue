@@ -1,7 +1,7 @@
 module Rope ( Node(..), conc, concAt, splitRopeAt, balance, toString ) where
 
 import qualified Data.Map as Map
-import Debug.Trace
+-- import Debug.Trace
 
 data Node
   =  Concat Int Int Node Node -- Concat length height left right
@@ -80,12 +80,11 @@ balancingAct str acc =
 
 inserter :: Map.Map Int Node -> Node -> Map.Map Int Node
 inserter m n =
-  -- trace ("inserter " ++ (show m) ++ " " ++ (show n))
-  (if all (\i -> not $ Map.member i m) (fibsUpto (len n)) then
-      Map.insert (len n) n m
-    else
-      let prefixIdx = firstNonemptyKey m in
-        inserter (Map.delete prefixIdx m) (concNoMerge (m Map.! prefixIdx) n))
+  if all (\i -> not $ Map.member i m) (fibsUpto (len n)) then
+    Map.insert (len n) n m
+  else
+    let prefixIdx = firstNonemptyKey m in
+      inserter (Map.delete prefixIdx m) (concNoMerge (m Map.! prefixIdx) n)
 
 firstNonemptyKey :: Map.Map Int a -> Int
 firstNonemptyKey m = minimum $ Map.keys m
