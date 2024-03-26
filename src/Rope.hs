@@ -1,4 +1,4 @@
-module Rope ( Node(..), conc, concAt, splitRopeAt, balance ) where
+module Rope ( Node(..), conc, concAt, splitRopeAt, balance, toString ) where
 
 import qualified Data.Map as Map
 import Debug.Trace
@@ -16,6 +16,10 @@ data Node
 
 -- foldRope :: (Node -> b -> b) -> b -> Node -> b
 -- foldRope f acc (Concat l h lc rc) = foldRope f acc lc
+
+toString :: Node -> String
+toString (Leaf _ s) = s
+toString (Concat _ _ lc rc) = toString lc ++ toString rc
 
 walkLeaves :: (String -> b -> b) -> b -> Node -> b
 walkLeaves f acc (Concat _ _ lc rc) = walkLeaves f (walkLeaves f acc lc) rc
@@ -76,7 +80,7 @@ balancingAct str acc =
 
 inserter :: Map.Map Int Node -> Node -> Map.Map Int Node
 inserter m n =
-  trace ("inserter " ++ (show m) ++ " " ++ (show n))
+  -- trace ("inserter " ++ (show m) ++ " " ++ (show n))
   (if all (\i -> not $ Map.member i m) (fibsUpto (len n)) then
       Map.insert (len n) n m
     else
