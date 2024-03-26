@@ -8,15 +8,6 @@ data Node
   |  Leaf Int String      -- Leaf length content
   deriving (Show, Eq)
 
--- Since this is specific to strings, we can't make a functor out of
--- this. But this is roughly what the definition would look like:
---
--- instance Functor Node where
---   fmap f (Concat l h lc rc) = Concat l h (f lc) (f rc)
-
--- foldRope :: (Node -> b -> b) -> b -> Node -> b
--- foldRope f acc (Concat l h lc rc) = foldRope f acc lc
-
 toString :: Node -> String
 toString (Leaf _ s) = s
 toString (Concat _ _ lc rc) = toString lc ++ toString rc
@@ -104,8 +95,6 @@ inserter m n =
 firstNonemptyKey :: Map.Map Int a -> Int
 firstNonemptyKey m = minimum $ Map.keys m
 
+-- test string from the paper
 paperTest :: Node
 paperTest = Concat 6 3 (Leaf 1 "a") (Concat 5 2 (Leaf 2 "bc") (Concat 3 1 (Leaf 1 "d") (Leaf 2 "ef")))
-
--- balanceLoop :: Node -> Map (Int, Int) Node -> Node
--- balanceLoop n _ = n
