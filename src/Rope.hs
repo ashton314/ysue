@@ -30,11 +30,8 @@ len (Concat l _  _ _) = l
 len (Leaf l _) = l
 
 -- Needed for balancing---so happy I get to use this!!!
-rawFibs :: [Int]
-rawFibs = 0:1:zipWith (+) rawFibs (tail rawFibs)
-
 fibs :: [Int]
-fibs = Prelude.drop 2 rawFibs
+fibs = 1:2:zipWith (+) fibs (tail fibs)
 
 fibsUpto :: Int -> [Int]
 fibsUpto n = takeWhile (<= n) fibs
@@ -56,9 +53,26 @@ conc n1 n2 = Concat (len n1 + len n2) (1 + maxHeight n1 n2) n1 n2
 concNoMerge :: Node -> Node -> Node
 concNoMerge n1 n2 = Concat (len n1 + len n2) (1 + maxHeight n1 n2) n1 n2
 
--- FIXME
 concAt :: Node -> Int -> String -> Node
-concAt nd idx str = nd
+concAt n@(Leaf l s) idx str
+  | idx == l = conc n (Leaf (length str) str)
+  | idx == 0 = Concat (length str + l) 1 (Leaf (length str) str) n
+  | idx < l =
+    let (lstr, rstr) = splitAt idx s in
+      Concat (l + length str) 2
+       (Concat (length lstr + length str) 1
+        (Leaf (length lstr) lstr)
+        (Leaf (length str) str))
+       (Leaf (length rstr) rstr)
+    -- Just stick on end of string... whatever
+  | otherwise = Concat (l + length str) 1 n (Leaf (length str) str)
+concAt n@(Concat l _ lc rc) idx str
+  | idx >= l = conc n (Leaf (length str) str)
+  | idx == 0 = conc (Leaf (length str) str) n
+  | idx <= len lc =
+    let newLeft = concAt lc idx str in
+      conc newLeft rc
+  | otherwise = conc lc $ concAt rc (idx - len lc) str
 
 -- FIXME
 splitRopeAt :: Node -> Int -> Node
@@ -67,6 +81,7 @@ splitRopeAt n idx = n
 balancedp :: Node -> Bool
 balancedp n = len n >= fibs !! (2 + height n)
 
+-- buggy: balance $ concAt (Leaf 3 "abc") 1 "Hi there"
 balance :: Node -> Node
 balance l@(Leaf _ _) = l
 balance n =
