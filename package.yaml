@@ -7,7 +7,7 @@ maintainer:          "example@example.com"
 copyright:           "2024 Author name here"
 
 extra-source-files:
-- README.md
+- README.org
 - CHANGELOG.md
 
 # Metadata used when publishing your package
@@ -21,6 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- containers
 
 ghc-options:
 - -Wall
