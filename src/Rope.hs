@@ -1,7 +1,7 @@
-module Rope ( Node(..), conc, concAt, splitRopeAt, balance, toString ) where
+module Rope ( Node(..), conc, concAt, splitRopeAt, balance, toString, concNoMerge, height ) where
 
 import qualified Data.Map as Map
--- import Debug.Trace
+import Debug.Trace
 
 data Node
   =  Concat Int Int Node Node -- Concat length height left right
@@ -73,6 +73,7 @@ balancedp :: Node -> Bool
 balancedp n = len n >= fibs !! (2 + height n)
 
 -- buggy: balance $ concAt (Leaf 3 "abc") 1 "Hi there"
+-- problem: need to reduce the result instead of pulling out one key
 balance :: Node -> Node
 balance l@(Leaf _ _) = l
 balance n =
@@ -86,11 +87,12 @@ balancingAct str acc =
 
 inserter :: Map.Map Int Node -> Node -> Map.Map Int Node
 inserter m n =
-  if all (\i -> not $ Map.member i m) (fibsUpto (len n)) then
+  -- trace ("inserter m: " ++ (show m) ++ " n: " ++ (show n))
+  (if all (\i -> not $ Map.member i m) (fibsUpto (len n)) then
     Map.insert (len n) n m
   else
     let prefixIdx = firstNonemptyKey m in
-      inserter (Map.delete prefixIdx m) (concNoMerge (m Map.! prefixIdx) n)
+      inserter (Map.delete prefixIdx m) (concNoMerge (m Map.! prefixIdx) n))
 
 firstNonemptyKey :: Map.Map Int a -> Int
 firstNonemptyKey m = minimum $ Map.keys m
