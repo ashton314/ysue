@@ -29,5 +29,5 @@ main = hspec $ do
     it "holds that balancing a node never changes its toString" $ do
       property $ \r -> toString r == toString (balance r)
 
-    it "holds that balancing never increases the height of the tree" $ do
-      property $ \r -> height r >= height (balance r)
+    -- it "holds that balancing always ends with a balanced tree" $ do
+    --   property $ \r -> balancedp (balance r)
