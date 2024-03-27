@@ -30,6 +30,11 @@ strInsAt s idx i =
   let (lside, rside) = splitAt idx s in
     lside ++ i ++ rside
 
+strDelAt :: String -> Int -> String
+strDelAt s idx =
+  let (lside, rside) = splitAt idx s in
+    lside ++ tail rside
+
 main :: IO ()
 main = hspec $ do
   describe "Checking properties for function 'balance'" $ do
@@ -39,6 +44,6 @@ main = hspec $ do
     it "holds that balancing always ends with a balanced tree" $ do
       property $ \r -> balancedp (balance r)
 
-  describe "Checking properties for function 'concAt'" $ do
+  describe "Checking properties for function 'insAt'" $ do
     it "inserting is the same as a raw insert" $ do
-      property $ \(r, i, s) -> strInsAt (toString r) i s == toString (concAt r i s)
+      property $ \(r, i, s) -> strInsAt (toString r) i s == toString (insAt r i s)

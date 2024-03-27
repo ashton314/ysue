@@ -1,4 +1,4 @@
-module Rope ( Node(..), conc, concAt, delAt, balance, toString, concNoMerge, height, balancedp ) where
+module Rope ( Node(..), conc, insAt, delAt, balance, toString, concNoMerge, height, balancedp ) where
 
 import qualified Data.Map as Map
 import Debug.Trace
@@ -39,20 +39,25 @@ maxHeight :: Node -> Node -> Int
 maxHeight a b = height a `max` height b
 
 conc :: Node -> Node -> Node
-conc (Leaf 0 "") n2 = n2
-conc n1 (Leaf 0 "") = n1
-conc n1@(Leaf l1 s1) n2@(Leaf l2 s2)
+conc n1 n2 =
+  if balancedp n then n else balance n
+  where n = concHelper n1 n2
+
+concHelper :: Node -> Node -> Node
+concHelper (Leaf 0 "") n2 = n2
+concHelper n1 (Leaf 0 "") = n1
+concHelper n1@(Leaf l1 s1) n2@(Leaf l2 s2)
   | l1 < 32 && l2 < 32 = Leaf (l1 + l2) (s1 ++ s2)
   | otherwise = Concat (l1 + l2) 1 n1 n2
-conc (Concat l1 d1 lc1 (Leaf rcl rcs)) (Leaf l2 s2) =
+concHelper (Concat l1 d1 lc1 (Leaf rcl rcs)) (Leaf l2 s2) =
   Concat (l1 + l2) d1 lc1 (Leaf (rcl + l2) (rcs ++ s2))
-conc n1 n2 = Concat (len n1 + len n2) (1 + maxHeight n1 n2) n1 n2
+concHelper n1 n2 = Concat (len n1 + len n2) (1 + maxHeight n1 n2) n1 n2
 
 concNoMerge :: Node -> Node -> Node
 concNoMerge n1 n2 = Concat (len n1 + len n2) (1 + maxHeight n1 n2) n1 n2
 
-concAt :: Node -> Int -> String -> Node
-concAt n@(Leaf l s) idx str
+insAt :: Node -> Int -> String -> Node
+insAt n@(Leaf l s) idx str
   | idx == l = conc n (Leaf (length str) str)
   | idx == 0 = Concat (length str + l) 1 (Leaf (length str) str) n
   | idx < l =
@@ -67,13 +72,13 @@ concAt n@(Leaf l s) idx str
        (Leaf rstr_len rstr)
     -- Just stick on end of string... whatever
   | otherwise = Concat (l + length str) 1 n (Leaf (length str) str)
-concAt n@(Concat l _ lc rc) idx str
+insAt n@(Concat l _ lc rc) idx str
   | idx >= l = conc n (Leaf (length str) str)
   | idx == 0 = conc (Leaf (length str) str) n
   | idx <= len lc =
-    let newLeft = concAt lc idx str in
+    let newLeft = insAt lc idx str in
       conc newLeft rc
-  | otherwise = conc lc $ concAt rc (idx - len lc) str
+  | otherwise = conc lc $ insAt rc (idx - len lc) str
 
 delAt :: Node -> Int -> Node
 delAt (Leaf 1 _) _ = Leaf 0 ""
@@ -81,7 +86,7 @@ delAt (Leaf l s) idx =
   let (lstr, rstr) = splitAt idx s in
     Concat (l-1) 1 (Leaf (length lstr) lstr) (Leaf (length rstr - 1) (tail rstr))
 delAt (Concat _ _ lc rc) idx
-  | idx < len lc = conc lc (delAt rc (idx - len lc))
+  | idx >= len lc = conc lc (delAt rc (idx - len lc))
   | otherwise = conc (delAt lc idx) rc
 
 balancedp :: Node -> Bool
