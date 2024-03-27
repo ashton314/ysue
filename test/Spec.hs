@@ -25,6 +25,11 @@ ropeGen = sized $ \n ->
 instance Arbitrary Node where
   arbitrary = ropeGen
 
+strInsAt :: String -> Int -> String -> String
+strInsAt s idx i =
+  let (lside, rside) = splitAt idx s in
+    lside ++ i ++ rside
+
 main :: IO ()
 main = hspec $ do
   describe "Checking properties for function 'balance'" $ do
@@ -33,3 +38,7 @@ main = hspec $ do
 
     it "holds that balancing always ends with a balanced tree" $ do
       property $ \r -> balancedp (balance r)
+
+  describe "Checking properties for function 'concAt'" $ do
+    it "inserting is the same as a raw insert" $ do
+      property $ \(r, i, s) -> strInsAt (toString r) i s == toString (concAt r i s)
