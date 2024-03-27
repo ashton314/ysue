@@ -95,6 +95,7 @@ balancedp n = len n >= fibs !! height n
 
 balance :: Node -> Node
 balance l@(Leaf _ _) = l
+balance (Concat 0 _ _ _) = Leaf 0 ""
 balance n =
   let res = walkLeaves balancingAct Map.empty n in
     foldl1 (flip concNoMerge) $ map snd $ Map.toAscList res
