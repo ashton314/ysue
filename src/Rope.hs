@@ -1,4 +1,4 @@
-module Rope ( Node(..), conc, concAt, splitRopeAt, balance, toString, concNoMerge, height, balancedp ) where
+module Rope ( Node(..), conc, concAt, delAt, balance, toString, concNoMerge, height, balancedp ) where
 
 import qualified Data.Map as Map
 import Debug.Trace
@@ -31,7 +31,6 @@ fibsUpto n = takeWhile (<= n) fibs
 fibFloor :: Int -> Int
 fibFloor = last . fibsUpto
 
-
 height :: Node -> Int
 height (Concat _ h _ _) = h
 height (Leaf _ _) = 0
@@ -39,9 +38,12 @@ height (Leaf _ _) = 0
 maxHeight :: Node -> Node -> Int
 maxHeight a b = height a `max` height b
 
--- TODO: add guards to make sure the leaves are not too long already
 conc :: Node -> Node -> Node
-conc (Leaf l1 s1) (Leaf l2 s2) = Leaf (l1 + l2) (s1 ++ s2)
+conc (Leaf 0 "") n2 = n2
+conc n1 (Leaf 0 "") = n1
+conc n1@(Leaf l1 s1) n2@(Leaf l2 s2)
+  | l1 < 32 && l2 < 32 = Leaf (l1 + l2) (s1 ++ s2)
+  | otherwise = Concat (l1 + l2) 1 n1 n2
 conc (Concat l1 d1 lc1 (Leaf rcl rcs)) (Leaf l2 s2) =
   Concat (l1 + l2) d1 lc1 (Leaf (rcl + l2) (rcs ++ s2))
 conc n1 n2 = Concat (len n1 + len n2) (1 + maxHeight n1 n2) n1 n2
@@ -54,12 +56,15 @@ concAt n@(Leaf l s) idx str
   | idx == l = conc n (Leaf (length str) str)
   | idx == 0 = Concat (length str + l) 1 (Leaf (length str) str) n
   | idx < l =
-    let (lstr, rstr) = splitAt idx s in
-      Concat (l + length str) 2
-       (Concat (length lstr + length str) 1
-        (Leaf (length lstr) lstr)
-        (Leaf (length str) str))
-       (Leaf (length rstr) rstr)
+    let (lstr, rstr) = splitAt idx s
+        lstr_len = length lstr
+        rstr_len = length rstr
+        str_len = length str in
+      Concat (l + str_len) 2
+       (Concat (lstr_len + str_len) 1
+        (Leaf lstr_len lstr)
+        (Leaf str_len str))
+       (Leaf rstr_len rstr)
     -- Just stick on end of string... whatever
   | otherwise = Concat (l + length str) 1 n (Leaf (length str) str)
 concAt n@(Concat l _ lc rc) idx str
@@ -70,9 +75,14 @@ concAt n@(Concat l _ lc rc) idx str
       conc newLeft rc
   | otherwise = conc lc $ concAt rc (idx - len lc) str
 
--- FIXME
-splitRopeAt :: Node -> Int -> Node
-splitRopeAt n idx = n
+delAt :: Node -> Int -> Node
+delAt (Leaf 1 _) _ = Leaf 0 ""
+delAt (Leaf l s) idx =
+  let (lstr, rstr) = splitAt idx s in
+    Concat (l-1) 1 (Leaf (length lstr) lstr) (Leaf (length rstr - 1) (tail rstr))
+delAt (Concat _ _ lc rc) idx
+  | idx < len lc = conc lc (delAt rc (idx - len lc))
+  | otherwise = conc (delAt lc idx) rc
 
 balancedp :: Node -> Bool
 balancedp (Leaf _ _) = True
