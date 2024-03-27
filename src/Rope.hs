@@ -78,14 +78,11 @@ balancedp :: Node -> Bool
 balancedp (Leaf _ _) = True
 balancedp n = len n >= fibs !! height n
 
--- buggy: balance $ concAt (Leaf 3 "abc") 1 "Hi there"
--- problem: need to reduce the result instead of pulling out one key
 balance :: Node -> Node
 balance l@(Leaf _ _) = l
 balance n =
   let res = walkLeaves balancingAct Map.empty n in
     foldl1 (flip concNoMerge) $ map snd $ Map.toAscList res
-    -- res Map.! firstNonemptyKey res
 
 balancingAct :: String -> Map.Map Int Node -> Map.Map Int Node
 balancingAct str acc =
@@ -107,10 +104,3 @@ firstNonemptyKey m = minimum $ Map.keys m
 -- test string from the paper
 paperTest :: Node
 paperTest = Concat 6 3 (Leaf 1 "a") (Concat 5 2 (Leaf 2 "bc") (Concat 3 1 (Leaf 1 "d") (Leaf 2 "ef")))
-
--- bug1 :: Node
--- bug1 = Concat 56 3 (Concat 39 2 (Leaf 11 "\NAK\1009744\US~\ENQ%j\1094784\DC2*0") (Concat 28 1 (Leaf 11 "|It\26219\DC3l\198401SKEb") (Leaf 17 "n\185161}\1044215\&49X \1055660H\4560\29899\&0\159919\40523\&2\1005450"))) (Leaf 17 "s9\SOH\171364f\190166H\r=Z\13732\&7\SO\a\STXs$")
-
--- simpler form of bug1; don't need all the special characters
--- bug2 :: Node
--- bug2 = Concat 56 3 (Concat 39 2 (Leaf 11 "aaaaaaaaaaa") (Concat 28 1 (Leaf 11 "bbbbbbbbbbb") (Leaf 17 "ccccccccccccccccc"))) (Leaf 17 "ddddddddddddddddd")
