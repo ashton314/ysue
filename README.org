@@ -19,7 +19,19 @@ Running the program once =ysue= is on your =PATH=:
 
 * Description
 
-=ysue= (/yoo/-sway) is a simple text editor implemented in Haskell. Of course, if you intend to do serious text editing, You Should be Using Emacs instead.
+Ysue (/yoo/-sway) is a simple text editor implemented in Haskell. Of course, if you intend to do serious text editing, You Should be Using Emacs instead.
+
+* Using
+
+TODO
+
+* Implementation
+
+Ysue uses a [[https://en.wikipedia.org/wiki/Rope_(data_structure)][rope]] under the hood to manage arbitrary insertions/deletions into a long string of text.
+
+I ran some benchmarks comparing how a rope vs. a naïve string implementation handle a series of random edits. Results:
+
+[[benchmark_results.png]]
 
 * Contributing and Reporting Bugs
 

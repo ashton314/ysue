@@ -15,16 +15,34 @@ someFunc = putStrLn "someFunc"
 benchmarks :: IO ()
 benchmarks = defaultMain [
   bgroup "rope" [
-      bench "100 ops" $ nfIO (runIt 100 (Leaf 1 "a") applyForRope >>= (return . toString)),
-      bench "1000 ops" $ nfIO (runIt 1000 (Leaf 1 "a") applyForRope >>= (return . toString)),
-      bench "10000 ops" $ nfIO (runIt 10000 (Leaf 1 "a") applyForRope >>= (return . toString)),
-      bench "100000 ops" $ nfIO (runIt 100000 (Leaf 1 "a") applyForRope >>= (return . toString))
+        bench "10 ops" $ nfIO (runIt 10 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "100 ops" $ nfIO (runIt 100 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "1000 ops" $ nfIO (runIt 1000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "2000 ops" $ nfIO (runIt 2000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "3000 ops" $ nfIO (runIt 3000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "4000 ops" $ nfIO (runIt 4000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "5000 ops" $ nfIO (runIt 5000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "6000 ops" $ nfIO (runIt 6000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "7000 ops" $ nfIO (runIt 7000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "8000 ops" $ nfIO (runIt 8000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "9000 ops" $ nfIO (runIt 9000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      , bench "10000 ops" $ nfIO (runIt 10000 (Leaf 1 "a") applyForRope >>= (return . toString))
+      -- , bench "100000 ops" $ nfIO (runIt 100000 (Leaf 1 "a") applyForRope >>= (return . toString))
       ],
   bgroup "string" [
-      bench "100 ops" $ nfIO (runIt 100 "a" applyForString),
-      bench "1000 ops" $ nfIO (runIt 1000 "a" applyForString),
-      bench "10000 ops" $ nfIO (runIt 10000 "a" applyForString),
-      bench "100000 ops" $ nfIO (runIt 100000 "a" applyForString)
+        bench "10 ops" $ nfIO (runIt 10 "a" applyForString)
+      , bench "100 ops" $ nfIO (runIt 100 "a" applyForString)
+      , bench "1000 ops" $ nfIO (runIt 1000 "a" applyForString)
+      , bench "2000 ops" $ nfIO (runIt 2000 "a" applyForString)
+      , bench "3000 ops" $ nfIO (runIt 3000 "a" applyForString)
+      , bench "4000 ops" $ nfIO (runIt 4000 "a" applyForString)
+      , bench "5000 ops" $ nfIO (runIt 5000 "a" applyForString)
+      , bench "6000 ops" $ nfIO (runIt 6000 "a" applyForString)
+      , bench "7000 ops" $ nfIO (runIt 7000 "a" applyForString)
+      , bench "8000 ops" $ nfIO (runIt 8000 "a" applyForString)
+      , bench "9000 ops" $ nfIO (runIt 9000 "a" applyForString)
+      , bench "10000 ops" $ nfIO (runIt 10000 "a" applyForString)
+      -- , bench "100000 ops" $ nfIO (runIt 100000 "a" applyForString)
       ]
   ]
 
