@@ -1,11 +1,11 @@
-module Rope ( Node(..), conc, insAt, delAt, balance, toString, concNoMerge, height, balancedp ) where
+module Rope ( Node(..), len, conc, insAt, delAt, balance, toString, concNoMerge, height, balancedp ) where
 
 import qualified Data.Map as Map
-import Debug.Trace
+-- import Debug.Trace
 
 data Node
   =  Concat Int Int Node Node -- Concat length height left right
-  |  Leaf Int String      -- Leaf length content
+  |  Leaf Int String          -- Leaf length content
   deriving (Show, Eq)
 
 toString :: Node -> String
@@ -59,12 +59,14 @@ concNoMerge n1 n2 = Concat (len n1 + len n2) (1 + maxHeight n1 n2) n1 n2
 insAt :: Node -> Int -> String -> Node
 insAt n@(Leaf l s) idx str
   | idx == l = conc n (Leaf (length str) str)
-  | idx == 0 = Concat (length str + l) 1 (Leaf (length str) str) n
+  | idx == 0 = conc (Leaf (length str) str) n
+  -- | idx == 0 = Concat (length str + l) 1 (Leaf (length str) str) n
   | idx < l =
     let (lstr, rstr) = splitAt idx s
         lstr_len = length lstr
         rstr_len = length rstr
         str_len = length str in
+      -- FIXME: I should be balancing here... right? Yeah, almost definitely
       Concat (l + str_len) 2
        (Concat (lstr_len + str_len) 1
         (Leaf lstr_len lstr)
@@ -118,5 +120,5 @@ firstNonemptyKey :: Map.Map Int a -> Int
 firstNonemptyKey m = minimum $ Map.keys m
 
 -- test string from the paper
-paperTest :: Node
-paperTest = Concat 6 3 (Leaf 1 "a") (Concat 5 2 (Leaf 2 "bc") (Concat 3 1 (Leaf 1 "d") (Leaf 2 "ef")))
+-- paperTest :: Node
+-- paperTest = Concat 6 3 (Leaf 1 "a") (Concat 5 2 (Leaf 2 "bc") (Concat 3 1 (Leaf 1 "d") (Leaf 2 "ef")))

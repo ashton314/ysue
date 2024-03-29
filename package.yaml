@@ -26,6 +26,8 @@ dependencies:
 - hspec
 - hspec-contrib
 - HUnit
+- criterion
+- random
 
 ghc-options:
 - -Wall

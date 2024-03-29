@@ -47,3 +47,6 @@ main = hspec $ do
   describe "Checking properties for function 'insAt'" $ do
     it "inserting is the same as a raw insert" $ do
       property $ \(r, i, s) -> strInsAt (toString r) i s == toString (insAt r i s)
+
+    it "inserting gives me a balanced tree" $ do
+      property $ \(r, i, s) -> balancedp (insAt (balance r) i s)
