@@ -49,7 +49,7 @@ benchmarks = defaultMain [
 class Sized a where
   size :: a -> Int
 
-instance Sized Node where
+instance Sized Rope where
   size = len
 
 instance Sized [a] where
@@ -78,11 +78,11 @@ applyForString :: String -> Act -> String
 applyForString s (Insert i str) = strInsAt s i str
 applyForString s (Delete i) = strDelAt s i
 
-applyForRope :: Node -> Act -> Node
+applyForRope :: Rope -> Act -> Rope
 applyForRope s (Insert i str) = insAt s i str
 applyForRope s (Delete i) = delAt s i
 
--- applyForRope :: Node -> 
+-- applyForRope :: Rope -> 
 
 accumRandActs :: (Sized a) => StdGen -> Int -> a -> (a -> Act -> a) -> a
 accumRandActs _ 0 x _ = x
@@ -91,8 +91,8 @@ accumRandActs gen count x applyAction =
       x'          = applyAction x act in
     accumRandActs gen' (count-1) x' applyAction
 
-insertNodeBias :: Float
-insertNodeBias = 0.8
+insertRopeBias :: Float
+insertRopeBias = 0.8
 
 randString :: StdGen -> String
 randString gen = do
@@ -103,6 +103,6 @@ randActionFor n gen =
   let (rand, newGen) = randomR (0, (size n) - 1) gen
       rstr = randString newGen
       (randFloat, newGen') = randomR (0.0, 1.0) newGen in
-    (if (size n < 5) || (randFloat < insertNodeBias)
+    (if (size n < 5) || (randFloat < insertRopeBias)
      then (newGen', Insert rand rstr)
      else (newGen', Delete rand))

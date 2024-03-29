@@ -5,24 +5,24 @@ import Test.QuickCheck
 
 import Rope
 
-genLeaf :: Gen Node
+genLeaf :: Gen Rope
 genLeaf = do
   str <- arbitrary
   return (Leaf (length str) str)
 
-genConcat :: Gen Node
+genConcat :: Gen Rope
 genConcat = do
   child1 <- ropeGen
   child2 <- ropeGen
   return (concNoMerge child1 child2)
 
-ropeGen :: Gen Node
+ropeGen :: Gen Rope
 ropeGen = sized $ \n ->
   if n == 0
   then genLeaf
   else oneof [genLeaf, genConcat]
 
-instance Arbitrary Node where
+instance Arbitrary Rope where
   arbitrary = ropeGen
 
 strInsAt :: String -> Int -> String -> String
