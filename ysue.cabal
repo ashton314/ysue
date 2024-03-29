@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Display
       Lib
       Rope
   other-modules:
@@ -43,6 +44,7 @@ library
     , hspec
     , hspec-contrib
     , random
+    , vty-crossplatform
   default-language: Haskell2010
 
 executable ysue-exe
@@ -63,6 +65,7 @@ executable ysue-exe
     , hspec
     , hspec-contrib
     , random
+    , vty-crossplatform
     , ysue
   default-language: Haskell2010
 
@@ -85,5 +88,6 @@ test-suite ysue-test
     , hspec
     , hspec-contrib
     , random
+    , vty-crossplatform
     , ysue
   default-language: Haskell2010
