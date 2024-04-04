@@ -1,4 +1,15 @@
-module Rope ( Rope(..), len, conc, insAt, delAt, balance, toString, concNoMerge, height, balancedp ) where
+module Rope ( Rope(..)
+            , len
+            , conc
+            , insAt
+            , delAt
+            , balance
+            , toString
+            , concNoMerge
+            , height
+            , balancedp
+            , fromString
+            , getRange ) where
 
 import qualified Data.Map as Map
 -- import Debug.Trace
@@ -89,6 +100,15 @@ delAt (Concat _ _ lc rc) idx
   | idx >= len lc = conc lc (delAt rc (idx - len lc))
   | otherwise = conc (delAt lc idx) rc
 
+getRange :: Rope -> Int -> Int -> String
+getRange _ _ 0 = ""
+getRange (Leaf _ s) start wantLength = take wantLength $ drop start s
+getRange (Concat l _ lc rc) start wantLength
+  | len lc < start = getRange rc (start - len lc) wantLength
+  | len lc >= (start + wantLength) = getRange lc start wantLength
+  | otherwise = getRange lc start lcLen ++ getRange rc 0 (wantLength - lcLen)
+                where lcLen = max 0 (len lc - start)
+
 balancedp :: Rope -> Bool
 balancedp (Leaf _ _) = True
 balancedp n = len n >= fibs !! height n
@@ -117,6 +137,27 @@ inserter m n =
 firstNonemptyKey :: Map.Map Int a -> Int
 firstNonemptyKey m = minimum $ Map.keys m
 
+fromString :: String -> Rope
+fromString s = fromStringBalanced s (length s)
+
+fromStringBalanced :: String -> Int -> Rope
+fromStringBalanced s l
+  | l < 64 = let (sh, st) = splitAt 32 s in conc (Leaf (length sh) sh) (Leaf (length st) st)
+  | otherwise = let head_l = div l 2
+                    (sh, st) = splitAt head_l s in
+                  conc (fromStringBalanced sh head_l) (fromStringBalanced st (l - head_l))
+
 -- test string from the paper
 -- paperTest :: Rope
 -- paperTest = Concat 6 3 (Leaf 1 "a") (Concat 5 2 (Leaf 2 "bc") (Concat 3 1 (Leaf 1 "d") (Leaf 2 "ef")))
+
+loremRope :: Rope
+loremRope = fromString "Sed id ligula quis est convallis tempor. Etiam vel neque nec dui dignissim bibendum. Fusce commodo. Nulla posuere. Donec vitae dolor. Nullam eu ante vel est convallis dignissim.  Sed diam.  Nullam tristique diam non turpis.  Nullam eu ante vel est convallis dignissim. "
+
+r2 :: Rope
+r2 = Concat 8 3 (Concat 3 2 (Leaf 0 "") (Concat 3 1 (Leaf 1 "x") (Leaf 2 "<>"))) (Leaf 5 "F.1I?")
+
+r3 :: Rope
+r3 = Concat 3 2 (Concat 3 1 (Leaf 1 "a") (Leaf 2 ".b")) (Leaf 0 "")
+
+-- getRange r3 2 1

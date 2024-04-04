@@ -28,6 +28,7 @@ dependencies:
 - HUnit
 - criterion
 - random
+- vty
 - vty-crossplatform
 
 ghc-options:

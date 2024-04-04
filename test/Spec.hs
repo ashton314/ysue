@@ -35,6 +35,9 @@ strDelAt s idx =
   let (lside, rside) = splitAt idx s in
     lside ++ tail rside
 
+grProp :: Rope -> Positive Int -> Positive Int -> Bool
+grProp r (Positive i) (Positive l) = getRange r i l == take l (drop i (toString r))
+
 main :: IO ()
 main = hspec $ do
   describe "Checking properties for function 'balance'" $ do
@@ -50,3 +53,11 @@ main = hspec $ do
 
     it "inserting gives me a balanced tree" $ do
       property $ \(r, i, s) -> balancedp (insAt (balance r) i s)
+
+  describe "Checking properties for fromString" $ do
+    it "works for any string" $ do
+      property $ \s -> toString (fromString s) == s
+
+  describe "Checking properties for getRange" $ do
+    it "is the same as pulling out of a regular string" $ do
+      property grProp
