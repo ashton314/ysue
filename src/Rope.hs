@@ -151,13 +151,13 @@ fromStringBalanced s l
 -- paperTest :: Rope
 -- paperTest = Concat 6 3 (Leaf 1 "a") (Concat 5 2 (Leaf 2 "bc") (Concat 3 1 (Leaf 1 "d") (Leaf 2 "ef")))
 
-loremRope :: Rope
-loremRope = fromString "Sed id ligula quis est convallis tempor. Etiam vel neque nec dui dignissim bibendum. Fusce commodo. Nulla posuere. Donec vitae dolor. Nullam eu ante vel est convallis dignissim.  Sed diam.  Nullam tristique diam non turpis.  Nullam eu ante vel est convallis dignissim. "
+-- loremRope :: Rope
+-- loremRope = fromString "Sed id ligula quis est convallis tempor. Etiam vel neque nec dui dignissim bibendum. Fusce commodo. Nulla posuere. Donec vitae dolor. Nullam eu ante vel est convallis dignissim.  Sed diam.  Nullam tristique diam non turpis.  Nullam eu ante vel est convallis dignissim. "
 
-r2 :: Rope
-r2 = Concat 8 3 (Concat 3 2 (Leaf 0 "") (Concat 3 1 (Leaf 1 "x") (Leaf 2 "<>"))) (Leaf 5 "F.1I?")
+-- r2 :: Rope
+-- r2 = Concat 8 3 (Concat 3 2 (Leaf 0 "") (Concat 3 1 (Leaf 1 "x") (Leaf 2 "<>"))) (Leaf 5 "F.1I?")
 
-r3 :: Rope
-r3 = Concat 3 2 (Concat 3 1 (Leaf 1 "a") (Leaf 2 ".b")) (Leaf 0 "")
+-- r3 :: Rope
+-- r3 = Concat 3 2 (Concat 3 1 (Leaf 1 "a") (Leaf 2 ".b")) (Leaf 0 "")
 
 -- getRange r3 2 1
