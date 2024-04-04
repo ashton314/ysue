@@ -25,7 +25,9 @@ import EditorState
 runner :: IO ()
 runner = do
   vty <- mkVty defaultConfig
-  let editor = freshEditor 20 20
+  (termWidth, termHeight) <- displayBounds (outputIface vty)
+  let editor = freshEditor termWidth termHeight
+  setWindowTitle vty "ysue"
   theLoop editor vty
   print "Thanks for using ysue!"
 
@@ -41,7 +43,7 @@ theLoop editor vty = do
 
 writeScreenLines :: Vty -> [String] -> IO ()
 writeScreenLines vty lns =
-  let strings = map (string (defAttr `withForeColor` green)) lns
+  let strings = map (string (defAttr `withForeColor` white)) lns
       img = foldl vertJoin emptyImage strings in
     update vty $ picForImage img
 
