@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 module EditorState
   ( BufferState
-  , EditorState
+  , EditorState(..)
   , updateCurrentBuffer
   , freshBuffer
   , freshEditor
@@ -36,6 +36,8 @@ data EditorState = EditorState
   , termWidth :: Int
   , termHeight :: Int
   , mode :: EditorMode
+  , terminate :: Bool
+  , flashMessage :: Maybe String
   } deriving (Show)
 
 type BufferUpdater = BufferState -> BufferState
@@ -53,7 +55,13 @@ freshBuffer buf_name s = BufferState
 freshEditor :: Int -> Int -> EditorState
 freshEditor tw th =
   let b1 = freshBuffer "scratch" "Welcome to ysue" in
-    EditorState {buffers=[b1], currentBuffer=0, termWidth=tw, termHeight=th, mode=Normal}
+    EditorState { buffers=[b1]
+                , currentBuffer=0
+                , termWidth=tw
+                , termHeight=th
+                , mode=Normal
+                , terminate = False
+                , flashMessage = Nothing}
 
 updateCurrentBuffer :: BufferUpdater -> EditorState -> EditorState
 updateCurrentBuffer u es =
@@ -91,9 +99,22 @@ insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
 
 editorInterpret :: EditorState -> Char -> EditorState
-editorInterpret e 'l' = updateCurrentBuffer (\b -> b { point = b.point + 1 }) e
-editorInterpret e 'h' = updateCurrentBuffer (\b -> b { point = b.point - 1 }) e
-editorInterpret e c = updateCurrentBuffer (insertChar c) e
+editorInterpret e@EditorState {mode = Normal} c = iNormal e c
+editorInterpret e@EditorState {mode = Insert} c = iInsert e c
+editorInterpret e _ = e
+-- editorInterpret e 'l' = updateCurrentBuffer (\b -> b { point = b.point + 1 }) e
+-- editorInterpret e 'h' = updateCurrentBuffer (\b -> b { point = b.point - 1 }) e
+-- editorInterpret e c = updateCurrentBuffer (insertChar c) e
+
+iNormal :: EditorState -> Char -> EditorState
+iNormal e 'l' = updateCurrentBuffer (\b -> b { point = b.point + 1 }) e
+iNormal e 'h' = updateCurrentBuffer (\b -> b { point = b.point - 1 }) e
+iNormal e 'q' = e { terminate = True }
+iNormal e 'i' = e { mode = Insert }
+iNormal e _ = e
+
+iInsert :: EditorState -> Char -> EditorState
+iInsert e c = updateCurrentBuffer (insertChar c) e
 
 
 -- it would be really cool to have a diff function: I give it two Ropes and it gives me a patch
