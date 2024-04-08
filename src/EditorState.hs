@@ -99,20 +99,30 @@ toLines s = bufferToLines (s.termWidth * s.termHeight) (visitingBuffer s)
 insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
 
-editorInterpret :: EditorState -> Event -> EditorState
-editorInterpret e@EditorState {mode = Normal} c = iNormal e c
-editorInterpret e@EditorState {mode = Insert} c = iInsert e c
-editorInterpret e _ = e
+delChar :: BufferUpdater
+delChar b = b { point = b.point - 1, dirty = True, contents = delAt b.contents b.point }
 
-iNormal :: EditorState -> Event -> EditorState
-iNormal e (EvKey (KChar 'l') []) = updateCurrentBuffer (\b -> b { point = min (len b.contents) b.point + 1 }) e
-iNormal e (EvKey (KChar 'h') []) = updateCurrentBuffer (\b -> b { point = max 0 b.point - 1 }) e
-iNormal e (EvKey (KChar 'q') []) = e { terminate = True }
-iNormal e (EvKey (KChar 'i') []) = e { mode = Insert }
-iNormal e _ = e
+editorInterpret :: EditorState -> Event -> IO EditorState
+editorInterpret e@EditorState {mode = Normal} c = iNormal e c
+editorInterpret e@EditorState {mode = Insert} c = return $ iInsert e c
+editorInterpret e _ = return e
+
+-- this is in the IO monad so we can write out
+iNormal :: EditorState -> Event -> IO EditorState
+iNormal e (EvKey (KChar 'l') []) =
+  return $ updateCurrentBuffer (\b -> b { point = min (len b.contents) b.point + 1 }) e
+iNormal e (EvKey (KChar 'h') []) =
+  return $ updateCurrentBuffer (\b -> b { point = max 0 b.point - 1 }) e
+iNormal e (EvKey (KChar 'q') []) =
+  return $ e { terminate = True }
+iNormal e (EvKey (KChar 'i') []) =
+  return $ e { mode = Insert }
+iNormal e _ = return e
 
 iInsert :: EditorState -> Event -> EditorState
 iInsert e (EvKey (KChar c) []) = updateCurrentBuffer (insertChar c) e
+iInsert e (EvKey KEnter []) = updateCurrentBuffer (insertChar '\n') e
+iInsert e (EvKey KDel []) = updateCurrentBuffer delChar e
 iInsert e (EvKey KEsc []) = e { mode = Normal }
 iInsert e _ = e
 

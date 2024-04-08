@@ -26,7 +26,8 @@ theLoop editor vty = do
   setCursorPos (outputIface vty) (Es.pointCol editor) (Es.pointRow editor)
   showCursor (outputIface vty)
   e <- nextEvent vty
-  theLoop (Es.editorInterpret editor e) vty
+  nextState <- Es.editorInterpret editor e
+  theLoop nextState vty
 
 writeScreenLines :: Vty -> [String] -> Es.EditorState -> IO ()
 writeScreenLines vty lns es = do
