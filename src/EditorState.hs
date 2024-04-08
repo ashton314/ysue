@@ -12,6 +12,7 @@ module EditorState
   , toLines) where
 
 import Rope
+import Graphics.Vty.Input.Events
 
 data EditorMode
   = Insert
@@ -98,23 +99,22 @@ toLines s = bufferToLines (s.termWidth * s.termHeight) (visitingBuffer s)
 insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
 
-editorInterpret :: EditorState -> Char -> EditorState
+editorInterpret :: EditorState -> Event -> EditorState
 editorInterpret e@EditorState {mode = Normal} c = iNormal e c
 editorInterpret e@EditorState {mode = Insert} c = iInsert e c
 editorInterpret e _ = e
--- editorInterpret e 'l' = updateCurrentBuffer (\b -> b { point = b.point + 1 }) e
--- editorInterpret e 'h' = updateCurrentBuffer (\b -> b { point = b.point - 1 }) e
--- editorInterpret e c = updateCurrentBuffer (insertChar c) e
 
-iNormal :: EditorState -> Char -> EditorState
-iNormal e 'l' = updateCurrentBuffer (\b -> b { point = b.point + 1 }) e
-iNormal e 'h' = updateCurrentBuffer (\b -> b { point = b.point - 1 }) e
-iNormal e 'q' = e { terminate = True }
-iNormal e 'i' = e { mode = Insert }
+iNormal :: EditorState -> Event -> EditorState
+iNormal e (EvKey (KChar 'l') []) = updateCurrentBuffer (\b -> b { point = min (len b.contents) b.point + 1 }) e
+iNormal e (EvKey (KChar 'h') []) = updateCurrentBuffer (\b -> b { point = max 0 b.point - 1 }) e
+iNormal e (EvKey (KChar 'q') []) = e { terminate = True }
+iNormal e (EvKey (KChar 'i') []) = e { mode = Insert }
 iNormal e _ = e
 
-iInsert :: EditorState -> Char -> EditorState
-iInsert e c = updateCurrentBuffer (insertChar c) e
+iInsert :: EditorState -> Event -> EditorState
+iInsert e (EvKey (KChar c) []) = updateCurrentBuffer (insertChar c) e
+iInsert e (EvKey KEsc []) = e { mode = Normal }
+iInsert e _ = e
 
 
 -- it would be really cool to have a diff function: I give it two Ropes and it gives me a patch
