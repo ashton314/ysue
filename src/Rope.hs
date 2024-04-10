@@ -9,7 +9,9 @@ module Rope ( Rope(..)
             , height
             , balancedp
             , fromString
-            , getRange ) where
+            , getRange
+            , getPrefix
+            , isearchFrom ) where
 
 import qualified Data.Map as Map
 -- import Debug.Trace
@@ -103,11 +105,33 @@ delAt (Concat _ _ lc rc) idx
 getRange :: Rope -> Int -> Int -> String
 getRange _ _ 0 = ""
 getRange (Leaf _ s) start wantLength = take wantLength $ drop start s
-getRange (Concat l _ lc rc) start wantLength
+getRange (Concat _ _ lc rc) start wantLength
   | len lc < start = getRange rc (start - len lc) wantLength
   | len lc >= (start + wantLength) = getRange lc start wantLength
   | otherwise = getRange lc start lcLen ++ getRange rc 0 (wantLength - lcLen)
                 where lcLen = max 0 (len lc - start)
+
+getPrefix :: Rope -> Int -> String
+getPrefix (Leaf _ s) start = drop start s
+getPrefix (Concat _ _ lc rc) start
+  | len lc < start = getPrefix rc (start - len lc)
+  | otherwise = getPrefix lc start ++ toString rc
+
+-- really really dumb incremental search
+isearchFrom :: Rope -> Int -> String -> Maybe Int
+isearchFrom r start str
+  | start + length str >= len r = Nothing
+  | otherwise = if headMatch str asStr then Just start else isearchFrom r (start + 1) str
+  where asStr = getPrefix r start
+
+-- I'm going to need an isearchBackwards function
+
+headMatch :: (Eq a) => [a] -> [a] -> Bool
+headMatch [] _ = True
+headMatch (_:_) [] = False
+headMatch (x:xs) (y:ys)
+  | x == y = headMatch xs ys
+  | otherwise = False
 
 balancedp :: Rope -> Bool
 balancedp (Leaf _ _) = True

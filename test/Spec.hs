@@ -38,6 +38,9 @@ strDelAt s idx =
 grProp :: Rope -> Positive Int -> Positive Int -> Bool
 grProp r (Positive i) (Positive l) = getRange r i l == take l (drop i (toString r))
 
+gpProp :: Rope -> Positive Int  -> Bool
+gpProp r (Positive i) = getPrefix r i == drop i (toString r)
+
 main :: IO ()
 main = hspec $ do
   describe "Checking properties for function 'balance'" $ do
@@ -61,3 +64,7 @@ main = hspec $ do
   describe "Checking properties for getRange" $ do
     it "is the same as pulling out of a regular string" $ do
       property grProp
+
+  describe "Checking prefix" $ do
+    it "is the same as prefix of a regular string" $ do
+      property gpProp

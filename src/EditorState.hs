@@ -13,6 +13,7 @@ module EditorState
 
 import Rope
 import Graphics.Vty.Input.Events
+import Data.Maybe (fromMaybe)
 
 data EditorMode
   = Insert
@@ -96,6 +97,10 @@ visitingBuffer s = s.buffers !! s.currentBuffer
 toLines :: EditorState -> [String]
 toLines s = bufferToLines (s.termWidth * s.termHeight) (visitingBuffer s)
 
+nextLineStart :: BufferState -> Maybe Int
+nextLineStart b =
+  isearchFrom b.contents b.point "\n"
+
 insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
 
@@ -113,6 +118,8 @@ iNormal e (EvKey (KChar 'l') []) =
   return $ updateCurrentBuffer (\b -> b { point = min (len b.contents) b.point + 1 }) e
 iNormal e (EvKey (KChar 'h') []) =
   return $ updateCurrentBuffer (\b -> b { point = max 0 b.point - 1 }) e
+iNormal e (EvKey (KChar 'j') []) =
+  return $ updateCurrentBuffer (\b -> b { point = b.point `fromMaybe` nextLineStart b }) e
 iNormal e (EvKey (KChar 'q') []) =
   return $ e { terminate = True }
 iNormal e (EvKey (KChar 'i') []) =
