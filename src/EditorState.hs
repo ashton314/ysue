@@ -24,6 +24,7 @@ data EditorMode
 
 data BufferState = BufferState
   { point :: Int
+  , wantCol :: Int
   , mark :: Int
   , screen_top :: Int
   , dirty :: Bool
@@ -47,6 +48,7 @@ type BufferUpdater = BufferState -> BufferState
 freshBuffer :: String -> String -> BufferState
 freshBuffer buf_name s = BufferState
   { point = 0
+  , wantCol = 0
   , mark = 0
   , screen_top = 0
   , dirty = False
@@ -69,6 +71,9 @@ updateCurrentBuffer :: BufferUpdater -> EditorState -> EditorState
 updateCurrentBuffer u es =
   es { buffers = replace es.buffers (es.currentBuffer, newBuf) }
   where newBuf = u (es.buffers !! es.currentBuffer)
+
+getCurrentBuffer :: EditorState -> BufferState
+getCurrentBuffer e = e.buffers !! e.currentBuffer
 
 replace :: [a] -> (Int, a) -> [a]
 replace [] _ = []
@@ -100,6 +105,47 @@ toLines s = bufferToLines (s.termWidth * s.termHeight) (visitingBuffer s)
 nextLineStart :: BufferState -> Maybe Int
 nextLineStart b =
   isearchFrom b.contents b.point "\n"
+
+lineBoundaries :: Rope -> Int -> (Int, Int)
+lineBoundaries r i =
+  ( fromMaybe 0 $ isearchCharBack i '\n' r
+  , fromMaybe (len r) $ isearchCharForward i '\n' r )
+
+currentLineBoundaries :: BufferState -> (Int, Int)
+currentLineBoundaries b = lineBoundaries b.contents b.point
+
+previousLineBoundaries :: BufferState -> (Int, Int)
+previousLineBoundaries b =
+  let (thisStart, _) = currentLineBoundaries b in
+    lineBoundaries b.contents (max 0 thisStart - 1)
+
+nextLineBoundaries :: BufferState -> (Int, Int)
+nextLineBoundaries b =
+  let (_, thisEnd) = currentLineBoundaries b in
+    lineBoundaries b.contents (min (len b.contents) thisEnd + 1)
+
+upLine :: EditorState -> EditorState
+upLine e =
+  let b = getCurrentBuffer e
+      (lstart, _) = currentLineBoundaries b
+      (prevStart, prevEnd) = previousLineBoundaries b
+      realCol = b.point - lstart
+      nextPoint = if e.termWidth < realCol
+                  then b.point - e.termWidth
+                  else min prevEnd (prevStart + b.wantCol) in
+    updateCurrentBuffer (\x -> x { point = nextPoint }) e
+
+-- downLine :: EditorState -> EditorState
+-- downLine e =
+--   let b = getCurrentBuffer e
+--       (lstart, lend) = currentLineBoundaries b
+--       (nextStart, nextEnd) = nextLineBoundaries b
+--       realCol = b.point - lstart
+--       nextPoint = if e.termWidth < realCol
+--                   then b.point - e.termWidth
+--                   else min prevEnd (prevStart + b.wantCol) in
+--     updateCurrentBuffer (\x -> x { point = nextPoint }) e
+
 
 insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }

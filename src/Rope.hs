@@ -221,12 +221,12 @@ fromStringBalanced s l
 -- loremRope :: Rope
 -- loremRope = fromString "Sed id ligula quis est convallis tempor. Etiam vel neque nec dui dignissim bibendum. Fusce commodo. Nulla posuere. Donec vitae dolor. Nullam eu ante vel est convallis dignissim.  Sed diam.  Nullam tristique diam non turpis.  Nullam eu ante vel est convallis dignissim. "
 
-loremRopeSmall :: Rope
-loremRopeSmall = fromString "Sed id ligula quis est convallis tempor.\nLorem dolor sit amet."
--- Sed id ligula quis est convallis tempor.nLorem dolor sit amet.
+-- loremRopeSmall :: Rope
+-- loremRopeSmall = fromString "Sed id ligula quis est convallis tempor.\nLorem dolor sit amet."
+-- -- Sed id ligula quis est convallis tempor.nLorem dolor sit amet.
 
-loremVerySmall :: Rope
-loremVerySmall = fromString "Lorem ipsum dolor"
+-- loremVerySmall :: Rope
+-- loremVerySmall = fromString "Lorem ipsum dolor"
 
 -- r2 :: Rope
 -- r2 = Concat 8 3 (Concat 3 2 (Leaf 0 "") (Concat 3 1 (Leaf 1 "x") (Leaf 2 "<>"))) (Leaf 5 "F.1I?")
