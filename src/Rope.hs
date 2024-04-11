@@ -11,9 +11,13 @@ module Rope ( Rope(..)
             , fromString
             , getRange
             , getPrefix
+            , isearchCharBack
+            , isearchCharForward
             , isearchFrom ) where
 
 import qualified Data.Map as Map
+import Data.List (elemIndex)
+import Data.Maybe (isNothing)
 -- import Debug.Trace
 
 data Rope
@@ -124,7 +128,46 @@ isearchFrom r start str
   | otherwise = if headMatch str asStr then Just start else isearchFrom r (start + 1) str
   where asStr = getPrefix r start
 
--- I'm going to need an isearchBackwards function
+(-:) :: a -> (a -> b) -> b
+x -: f = f x
+
+isearchCharForward :: Int -> Char -> Rope -> Maybe Int
+isearchCharForward start c (Leaf l s)
+  | start >= l = Nothing
+  | otherwise = elemIndex c (drop start s) >>= \x -> return $ start + x
+isearchCharForward start c (Concat _ _ lc rc)
+  | start >= len lc = isearchCharForward (start - len lc) c rc
+  | otherwise = let inLeft = isearchCharForward start c lc in
+                  if isNothing inLeft
+                  then isearchCharForward 0 c rc >>= \x -> return $ x + len lc
+                  else inLeft
+
+isearchCharBack :: Int -> Char -> Rope -> Maybe Int
+isearchCharBack start c (Leaf _ s) =
+  take (start + 1) s
+  -: reverse
+  -: elemIndex c >>= \x -> return $ start - x
+isearchCharBack  start c r@(Concat l _ lc rc)
+  | start >= l = isearchCharBack (l-1) c r
+  | start <= len lc = isearchCharBack start c lc
+  | otherwise = let inRight = isearchCharBack (start - len lc) c rc in
+                  if isNothing inRight
+                  then isearchCharBack (len lc) c lc
+                  else inRight >>= \x -> return $ len lc + x
+
+-- isearchCharBack :: Rope -> Int -> Char -> Maybe Int
+-- isearchCharBack (Leaf l s) start c =
+--   trace ("l1: " ++ (show start) ++ " " ++ (show s)) take (start + 1) s
+--   -: (\x -> trace ("head " ++ show x) x)
+--   -: reverse
+--   -: (\x -> trace ("reversed " ++ show x) x)
+--   -: elemIndex c >>= \x -> return $ start - x
+-- isearchCharBack (Concat _ _ lc rc) start c
+--   | start <= len lc = trace ("b1: " ++ (show start) ++ " lc: " ++ (show lc) ++ "\nres: ") isearchCharBack lc start c
+--   | otherwise = let inRight = trace ("b2: " ++ (show start) ++ " rc: " ++ (show rc) ++ "\nres: ") isearchCharBack rc (start - len lc) c in
+--                   if isNothing inRight
+--                   then isearchCharBack lc (len lc) c
+--                   else inRight >>= \x -> return $ len lc + x
 
 headMatch :: (Eq a) => [a] -> [a] -> Bool
 headMatch [] _ = True
@@ -177,6 +220,13 @@ fromStringBalanced s l
 
 -- loremRope :: Rope
 -- loremRope = fromString "Sed id ligula quis est convallis tempor. Etiam vel neque nec dui dignissim bibendum. Fusce commodo. Nulla posuere. Donec vitae dolor. Nullam eu ante vel est convallis dignissim.  Sed diam.  Nullam tristique diam non turpis.  Nullam eu ante vel est convallis dignissim. "
+
+loremRopeSmall :: Rope
+loremRopeSmall = fromString "Sed id ligula quis est convallis tempor.\nLorem dolor sit amet."
+-- Sed id ligula quis est convallis tempor.nLorem dolor sit amet.
+
+loremVerySmall :: Rope
+loremVerySmall = fromString "Lorem ipsum dolor"
 
 -- r2 :: Rope
 -- r2 = Concat 8 3 (Concat 3 2 (Leaf 0 "") (Concat 3 1 (Leaf 1 "x") (Leaf 2 "<>"))) (Leaf 5 "F.1I?")
