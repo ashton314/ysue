@@ -9,6 +9,7 @@ import Graphics.Vty.CrossPlatform (mkVty)
 
 import Rope
 import qualified EditorState as Es
+import Data.Maybe (fromMaybe)
 
 runner :: IO ()
 runner = do
@@ -29,17 +30,19 @@ theLoop editor vty = do
 
 displayEditor :: Vty -> Es.EditorState -> IO ()
 displayEditor vty e = do
+  (tw, _) <- displayBounds (outputIface vty)
   let (pointRow, pointCol, lns) = Es.toScreenMatrix e
       strings = map (string (defAttr `withForeColor` white)) lns
       img = foldl vertJoin emptyImage strings
       footer = string (defAttr `withStyle` reverseVideo) (statusString pointRow pointCol e) in
     do
-      update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) ""
+      update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) (fromMaybe (replicate tw ' ') (Es.flashMessage e))
       setCursorPos (outputIface vty) pointCol pointRow
       showCursor (outputIface vty)
 
 statusString :: Int -> Int -> Es.EditorState -> String
 statusString row col e =
+  take (Es.termWidth e)
   "-:"
   ++ (if Es.dirty $ Es.visitingBuffer e then "**" else "--")
   ++ " "
@@ -51,6 +54,7 @@ statusString row col e =
   ++ ")  <"
   ++ show (Es.mode e)
   ++ ">"
+  ++ replicate (Es.termWidth e) ' '
 
 loremRope :: Rope
 loremRope = fromString "Sed id ligula quis est convallis tempor\nEtiam vel neque nec dui dignissim bibendum\nFusce commodo\nNulla posuere\nDonec vitae dolor\nNullam eu ante vel est convallis dignissim\n Sed diam\n Nullam tristique diam non turpis\n Nullam eu ante vel est convallis dignissim\n"
