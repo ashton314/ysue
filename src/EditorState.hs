@@ -9,6 +9,9 @@ module EditorState
   , visitingBuffer
   , pointCol
   , pointRow
+  , currentLineBoundaries
+  , previousLineBoundaries
+  , nextLineBoundaries
   , toScreenMatrix
   , toLines) where
 
