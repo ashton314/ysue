@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 module EditorState
-  ( BufferState
+  ( BufferState(..)
   , EditorState(..)
   , updateCurrentBuffer
   , freshBuffer
@@ -9,6 +9,7 @@ module EditorState
   , visitingBuffer
   , pointCol
   , pointRow
+  , toScreenMatrix
   , toLines) where
 
 import Rope
@@ -43,6 +44,18 @@ data EditorState = EditorState
   , flashMessage :: Maybe String
   } deriving (Show)
 
+-- Future: add syntax highlighting
+-- data Prop
+--   = BackgroundColor String
+--   | ForegroundColor String
+--   | Info String String
+
+-- type PropList = [Prop]
+
+-- data PropStr
+--   = Plain String
+--   | Prop PropList PropStr
+
 type BufferUpdater = BufferState -> BufferState
 
 freshBuffer :: String -> String -> BufferState
@@ -58,7 +71,7 @@ freshBuffer buf_name s = BufferState
 
 freshEditor :: Int -> Int -> EditorState
 freshEditor tw th =
-  let b1 = freshBuffer "scratch" "Welcome to ysue" in
+  let b1 = freshBuffer "scratch" "Welcome to ysue\n\nYou know you should really be using Emacs, right?" in
     EditorState { buffers=[b1]
                 , currentBuffer=0
                 , termWidth=tw
@@ -93,14 +106,47 @@ pointRow e =
   b.point `div` e.termWidth
   where b = visitingBuffer e
 
-bufferToLines :: Int -> BufferState -> [String]
-bufferToLines chars s = lines $ getRange s.contents s.screen_top chars
+bufferToLines :: Int -> BufferState -> [(Int, String)]
+bufferToLines chars s =
+  reverse $ snd $ foldl (\(pos, acc) l -> (pos + length l, (pos, l):acc)) (s.screen_top, []) ls
+  where ls = lines $ getRange s.contents s.screen_top chars
+
+wrapLines :: [(Int, String)] -> Int -> [(Int, String)]
+wrapLines [] _ = []
+wrapLines ((ls,str):xs) width
+  | length str > width = (ls, take width str++"$"):wrapLines ((ls+width, drop width str):xs) width
+  | otherwise = (ls, str):wrapLines xs width
+
+toScreenMatrix :: EditorState -> (Int, Int, [String])
+toScreenMatrix e =
+  let lineData = bufferToLines (e.termWidth * e.termHeight) (visitingBuffer e)
+      -- a value that is very far away from the point (for finding cursor)
+      farAway = (visitingBuffer e).point + (e.termWidth * e.termHeight)
+      wrapped = take (e.termHeight - 2) $ wrapLines lineData (e.termWidth - 1) ++ repeat (farAway, "~")
+      (row, col) = findPoint (visitingBuffer e).point wrapped in
+    (row, col, map snd wrapped)
+
+findPoint :: Int -> [(Int, String)] -> (Int, Int)
+findPoint p ls =
+  let (rowNum, rowStart) = findCurrentRow p 0 0 ls in
+    (rowNum, p - rowStart)
+
+findCurrentRow :: Int -> Int -> Int -> [(Int, String)] -> (Int, Int)
+findCurrentRow _ rowNum rStart [] = (rowNum, rStart)
+findCurrentRow p rowNum rStart ((nextRStart,_):rst)
+  | nextRStart > p = (max 0 (rowNum - 1), rStart)
+  | otherwise = findCurrentRow p (rowNum + 1) nextRStart rst
+
+-- someRows :: [(Int, String)]
+-- someRows = [ (0, "hello")
+--            , (6, "there")
+--            , (12, "you must be new")]
 
 visitingBuffer :: EditorState -> BufferState
 visitingBuffer s = s.buffers !! s.currentBuffer
 
 toLines :: EditorState -> [String]
-toLines s = bufferToLines (s.termWidth * s.termHeight) (visitingBuffer s)
+toLines s = map snd $ bufferToLines (s.termWidth * s.termHeight) (visitingBuffer s)
 
 nextLineStart :: BufferState -> Maybe Int
 nextLineStart b =
@@ -135,17 +181,16 @@ upLine e =
                   else min prevEnd (prevStart + b.wantCol) in
     updateCurrentBuffer (\x -> x { point = nextPoint }) e
 
--- downLine :: EditorState -> EditorState
--- downLine e =
---   let b = getCurrentBuffer e
---       (lstart, lend) = currentLineBoundaries b
---       (nextStart, nextEnd) = nextLineBoundaries b
---       realCol = b.point - lstart
---       nextPoint = if e.termWidth < realCol
---                   then b.point - e.termWidth
---                   else min prevEnd (prevStart + b.wantCol) in
---     updateCurrentBuffer (\x -> x { point = nextPoint }) e
-
+downLine :: EditorState -> EditorState
+downLine e =
+  let b = getCurrentBuffer e
+      (_, lend) = currentLineBoundaries b
+      (nextStart, nextEnd) = nextLineBoundaries b
+      -- realCol = b.point - lstart
+      nextPoint = if lend > e.termWidth + b.point
+                  then b.point + e.termWidth
+                  else min nextEnd (nextStart + b.wantCol) in
+    updateCurrentBuffer (\x -> x { point = nextPoint }) e
 
 insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
@@ -165,7 +210,9 @@ iNormal e (EvKey (KChar 'l') []) =
 iNormal e (EvKey (KChar 'h') []) =
   return $ updateCurrentBuffer (\b -> b { point = max 0 b.point - 1 }) e
 iNormal e (EvKey (KChar 'j') []) =
-  return $ updateCurrentBuffer (\b -> b { point = b.point `fromMaybe` nextLineStart b }) e
+  return $ downLine e
+iNormal e (EvKey (KChar 'k') []) =
+  return $ upLine e
 iNormal e (EvKey (KChar 'q') []) =
   return $ e { terminate = True }
 iNormal e (EvKey (KChar 'i') []) =

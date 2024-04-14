@@ -22,24 +22,35 @@ runner = do
 theLoop :: Es.EditorState -> Vty -> IO ()
 theLoop Es.EditorState { Es.terminate = True } vty = shutdown vty
 theLoop editor vty = do
-  writeScreenLines vty (Es.toLines editor) editor
-  setCursorPos (outputIface vty) (Es.pointCol editor) (Es.pointRow editor)
-  showCursor (outputIface vty)
+  displayEditor vty editor
   e <- nextEvent vty
   nextState <- Es.editorInterpret editor e
   theLoop nextState vty
 
-writeScreenLines :: Vty -> [String] -> Es.EditorState -> IO ()
-writeScreenLines vty lns es = do
-  (_, termHeight) <- displayBounds (outputIface vty)
-  let strings = map (string (defAttr `withForeColor` white)) lns
-      img = foldl vertJoin emptyImage $ take (termHeight - 2) strings
-      footer = string (defAttr `withStyle` reverseVideo) (statusString es) in
-    update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) ""
+displayEditor :: Vty -> Es.EditorState -> IO ()
+displayEditor vty e = do
+  let (pointRow, pointCol, lns) = Es.toScreenMatrix e
+      strings = map (string (defAttr `withForeColor` white)) lns
+      img = foldl vertJoin emptyImage strings
+      footer = string (defAttr `withStyle` reverseVideo) (statusString pointRow pointCol e) in
+    do
+      update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) ""
+      setCursorPos (outputIface vty) pointCol pointRow
+      showCursor (outputIface vty)
 
-statusString :: Es.EditorState -> String
-statusString e = "foo"
-  -- (if (Es.currentBuffer e))
+statusString :: Int -> Int -> Es.EditorState -> String
+statusString row col e =
+  "-:"
+  ++ (if Es.dirty $ Es.visitingBuffer e then "**" else "--")
+  ++ " "
+  ++ show (Es.point $ Es.visitingBuffer e)
+  ++ ":("
+  ++ show row
+  ++ ", "
+  ++ show col
+  ++ ")  <"
+  ++ show (Es.mode e)
+  ++ ">"
 
 loremRope :: Rope
 loremRope = fromString "Sed id ligula quis est convallis tempor\nEtiam vel neque nec dui dignissim bibendum\nFusce commodo\nNulla posuere\nDonec vitae dolor\nNullam eu ante vel est convallis dignissim\n Sed diam\n Nullam tristique diam non turpis\n Nullam eu ante vel est convallis dignissim\n"
