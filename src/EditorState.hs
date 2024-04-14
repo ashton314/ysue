@@ -106,10 +106,11 @@ pointRow e =
   b.point `div` e.termWidth
   where b = visitingBuffer e
 
+
 bufferToLines :: Int -> BufferState -> [(Int, String)]
 bufferToLines chars s =
   reverse $ snd $ foldl (\(pos, acc) l -> (pos + length l, (pos, l):acc)) (s.screen_top, []) ls
-  where ls = lines $ getRange s.contents s.screen_top chars
+  where ls = map (++ "\n") $ lines $ getRange s.contents s.screen_top chars
 
 wrapLines :: [(Int, String)] -> Int -> [(Int, String)]
 wrapLines [] _ = []
