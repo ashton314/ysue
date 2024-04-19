@@ -36,10 +36,18 @@ displayEditor vty e = do
       img = foldl vertJoin emptyImage strings
       footer = string (defAttr `withStyle` reverseVideo) (statusString pointRow pointCol e) in
     do
-      update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) (fromMaybe (replicate tw ' ') (Es.flashMessage e))
+      update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) (miniBuffer tw e)
       refresh vty
       setCursorPos (outputIface vty) pointCol pointRow
       showCursor (outputIface vty)
+
+miniBuffer :: Int -> Es.EditorState -> String
+miniBuffer tw e =
+  (case Es.mode e of
+     Es.ReadCommand cmd -> ":" ++ cmd
+     _ -> "")
+  ++ " "
+  ++ fromMaybe (replicate tw ' ') (Es.flashMessage e)
 
 statusString :: Int -> Int -> Es.EditorState -> String
 statusString row col e =

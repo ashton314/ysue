@@ -2,6 +2,7 @@
 module EditorState
   ( BufferState(..)
   , EditorState(..)
+  , EditorMode(..)
   , updateCurrentBuffer
   , freshBuffer
   , freshEditor
@@ -22,7 +23,7 @@ import Graphics.Vty.Input.Events
 data EditorMode
   = Insert
   | Replace
-  | Command
+  | ReadCommand String
   | Normal
   deriving (Show)
 
@@ -140,7 +141,9 @@ toScreenMatrix e =
       farAway = (visitingBuffer e).point + (e.termWidth * e.termHeight)
       padded = take (e.termHeight - 2) $ wrapped ++ repeat (farAway, "~")
       (row, col) = findPoint (visitingBuffer e).point padded in
-    (row, col, map snd padded)
+    case mode e of
+      ReadCommand cmd -> (e.termHeight - 1, 1 + length cmd, map snd padded)
+      _ -> (row, col, map snd padded)
 
 -- go from point -> x,y position in buffer
 findPoint :: Int -> [(Int, String)] -> (Int, Int)
@@ -201,6 +204,7 @@ delChar b = b { point = b.point - 1, dirty = True, contents = delAt b.contents $
 
 editorInterpret :: EditorState -> Event -> IO EditorState
 editorInterpret e@EditorState {mode = Normal} c = iNormal e c
+editorInterpret e@EditorState {mode = ReadCommand _} c = iReadCommand e c
 editorInterpret e@EditorState {mode = Insert} c = return $ iInsert e c
 editorInterpret e _ = return e
 
@@ -230,7 +234,8 @@ iNormal e (EvKey (KChar 'q') []) =
   return $ e { terminate = True }
 iNormal e (EvKey (KChar 'i') []) =
   return $ e { mode = Insert }
--- iNormal e _ = return e
+iNormal e (EvKey (KChar ':') []) =
+  return $ e { mode = ReadCommand "" }
 iNormal e k = return $ addFlash ("unknown key: " ++ show k) e
 
 iInsert :: EditorState -> Event -> EditorState
@@ -241,5 +246,19 @@ iInsert e (EvKey KBS []) = updateCurrentBuffer delChar e
 iInsert e (EvKey KEsc []) = e { mode = Normal }
 iInsert e k = addFlash ("unknown key: " ++ show k) e
 
+iReadCommand :: EditorState -> Event -> IO EditorState
+iReadCommand e (EvKey (KChar 'g') [MCtrl]) = return $ e { mode = Normal }
+iReadCommand e@EditorState{ mode = ReadCommand cmd } (EvKey KEnter []) = iExCmd cmd e
+iReadCommand e@EditorState{ mode = ReadCommand cmd } (EvKey (KChar c) []) =
+  return $ e { mode = ReadCommand $ cmd ++ [c]}
+iReadCommand e@EditorState{ mode = ReadCommand cmd } (EvKey KBS []) =
+  return $ e { mode = ReadCommand $ take (length cmd - 1) cmd }
+iReadCommand e k = return $ addFlash ("unknown key: " ++ show k) e
 
--- it would be really cool to have a diff function: I give it two Ropes and it gives me a patch
+iExCmd :: String -> EditorState -> IO EditorState
+iExCmd "q" e = return $ e { terminate = True }
+iExCmd ('e':' ':fileName) e = do
+  fileContents <- readFile fileName
+  let newBuff = (freshBuffer fileName fileContents) { file = Just fileName } in
+    return $ e { buffers = newBuff:e.buffers }
+iExCmd cmd e = return $ addFlash ("bad command: " ++ cmd) $ e { mode = Normal }
