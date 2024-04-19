@@ -7,7 +7,7 @@ module Display (runner) where
 import Graphics.Vty
 import Graphics.Vty.CrossPlatform (mkVty)
 
-import Rope
+-- import Rope
 import qualified EditorState as Es
 import Data.Maybe (fromMaybe)
 
@@ -25,8 +25,11 @@ theLoop Es.EditorState { Es.terminate = True } vty = shutdown vty
 theLoop editor vty = do
   displayEditor vty editor
   e <- nextEvent vty
-  nextState <- Es.editorInterpret (Es.clearFlash editor) e
-  theLoop nextState vty
+  if e == EvKey (KChar 'l') [MCtrl]
+    then do refresh vty; theLoop editor vty
+    else do
+    nextState <- Es.editorInterpret (Es.clearFlash editor) e
+    theLoop nextState vty
 
 displayEditor :: Vty -> Es.EditorState -> IO ()
 displayEditor vty e = do
@@ -37,7 +40,9 @@ displayEditor vty e = do
       footer = string (defAttr `withStyle` reverseVideo) (statusString pointRow pointCol e) in
     do
       update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) (miniBuffer tw e)
-      refresh vty
+      if Es.mode e == Es.Insert
+        then do refresh vty
+        else do return ()
       setCursorPos (outputIface vty) pointCol pointRow
       showCursor (outputIface vty)
 
@@ -68,6 +73,6 @@ statusString row col e =
   -- ++ " wantCol: " ++ show (Es.wantCol $ Es.visitingBuffer e)
   ++ replicate (Es.termWidth e) ' '
 
-loremRope :: Rope
-loremRope = fromString "Sed id ligula quis est convallis tempor\nEtiam vel neque nec dui dignissim bibendum\nFusce commodo\nNulla posuere\nDonec vitae dolor\nNullam eu ante vel est convallis dignissim\n Sed diam\n Nullam tristique diam non turpis\n Nullam eu ante vel est convallis dignissim\n"
+-- loremRope :: Rope
+-- loremRope = fromString "Sed id ligula quis est convallis tempor\nEtiam vel neque nec dui dignissim bibendum\nFusce commodo\nNulla posuere\nDonec vitae dolor\nNullam eu ante vel est convallis dignissim\n Sed diam\n Nullam tristique diam non turpis\n Nullam eu ante vel est convallis dignissim\n"
 

@@ -25,7 +25,7 @@ data EditorMode
   | Replace
   | ReadCommand String
   | Normal
-  deriving (Show)
+  deriving (Show, Eq)
 
 data BufferState = BufferState
   { point :: Int
@@ -260,5 +260,5 @@ iExCmd "q" e = return $ e { terminate = True }
 iExCmd ('e':' ':fileName) e = do
   fileContents <- readFile fileName
   let newBuff = (freshBuffer fileName fileContents) { file = Just fileName } in
-    return $ e { buffers = newBuff:e.buffers }
+    return $ e { buffers = newBuff:e.buffers, mode = Normal }
 iExCmd cmd e = return $ addFlash ("bad command: " ++ cmd) $ e { mode = Normal }
