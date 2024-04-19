@@ -54,9 +54,9 @@ statusString row col e =
   ++ ")  <"
   ++ show (Es.mode e)
   ++ ">"
-  ++ " " ++ show (Es.previousLineBoundaries (Es.visitingBuffer e))
-  ++ " " ++ show (Es.currentLineBoundaries (Es.visitingBuffer e))
-  ++ " " ++ show (Es.nextLineBoundaries (Es.visitingBuffer e))
+  -- ++ " " ++ show (Es.previousLineBoundaries (Es.visitingBuffer e))
+  -- ++ " " ++ show (Es.currentLineBoundaries (Es.visitingBuffer e))
+  -- ++ " " ++ show (Es.nextLineBoundaries (Es.visitingBuffer e))
   ++ replicate (Es.termWidth e) ' '
 
 loremRope :: Rope

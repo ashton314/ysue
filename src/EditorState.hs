@@ -9,15 +9,16 @@ module EditorState
   , visitingBuffer
   , pointCol
   , pointRow
-  , currentLineBoundaries
-  , previousLineBoundaries
-  , nextLineBoundaries
+  , findPoint
+  , coordLoc
+  -- , currentLineBoundaries
+  -- , previousLineBoundaries
+  -- , nextLineBoundaries
   , toScreenMatrix
   , toLines) where
 
 import Rope
 import Graphics.Vty.Input.Events
-import Data.Maybe (fromMaybe)
 
 data EditorMode
   = Insert
@@ -109,7 +110,6 @@ pointRow e =
   b.point `div` e.termWidth
   where b = visitingBuffer e
 
-
 bufferToLines :: Int -> BufferState -> [(Int, String)]
 bufferToLines chars s =
   reverse $ snd $ foldl (\(pos, acc) l -> (pos + length l, (pos, l):acc)) (s.screen_top, []) ls
@@ -121,19 +121,32 @@ wrapLines ((ls,str):xs) width
   | length str > width = (ls, take width str++"$"):wrapLines ((ls+width, drop width str):xs) width
   | otherwise = (ls, str):wrapLines xs width
 
-toScreenMatrix :: EditorState -> (Int, Int, [String])
-toScreenMatrix e =
+toMatrix :: EditorState -> (Int, Int, [(Int, String)])
+toMatrix e =
   let lineData = bufferToLines (e.termWidth * e.termHeight) (visitingBuffer e)
       -- a value that is very far away from the point (for finding cursor)
       farAway = (visitingBuffer e).point + (e.termWidth * e.termHeight)
       wrapped = take (e.termHeight - 2) $ wrapLines lineData (e.termWidth - 1) ++ repeat (farAway, "~")
       (row, col) = findPoint (visitingBuffer e).point wrapped in
-    (row, col, map snd wrapped)
+    (row, col, wrapped)
 
+-- editor state -> cursor row, cursor col, buffer matrix
+toScreenMatrix :: EditorState -> (Int, Int, [String])
+toScreenMatrix e =
+  let (r, c, w) = toMatrix e in
+    (r, c, map snd w)
+
+-- go from point -> x,y position in buffer
 findPoint :: Int -> [(Int, String)] -> (Int, Int)
 findPoint p ls =
   let (rowNum, rowStart) = findCurrentRow p 0 0 ls in
     (rowNum, p - rowStart)
+
+-- go from x,y position in buffer -> nearest point
+coordLoc :: [(Int, String)] -> (Int, Int) -> Int
+coordLoc lns (row, col) =
+  let (rowStart, theRow) = lns !! row in
+    rowStart + min (length theRow) col
 
 findCurrentRow :: Int -> Int -> Int -> [(Int, String)] -> (Int, Int)
 findCurrentRow _ rowNum rStart [] = (rowNum, rStart)
@@ -152,49 +165,21 @@ visitingBuffer s = s.buffers !! s.currentBuffer
 toLines :: EditorState -> [String]
 toLines s = map snd $ bufferToLines (s.termWidth * s.termHeight) (visitingBuffer s)
 
-nextLineStart :: BufferState -> Maybe Int
-nextLineStart b =
-  isearchFrom b.contents b.point "\n"
-
-lineBoundaries :: Rope -> Int -> (Int, Int)
-lineBoundaries r i =
-  ( fromMaybe 0 $ isearchCharBack i '\n' r
-  , fromMaybe (len r) $ isearchCharForward i '\n' r )
-
-currentLineBoundaries :: BufferState -> (Int, Int)
-currentLineBoundaries b = lineBoundaries b.contents b.point
-
-previousLineBoundaries :: BufferState -> (Int, Int)
-previousLineBoundaries b =
-  let (thisStart, _) = currentLineBoundaries b in
-    lineBoundaries b.contents (max 0 thisStart - 1)
-
-nextLineBoundaries :: BufferState -> (Int, Int)
-nextLineBoundaries b =
-  let (_, thisEnd) = currentLineBoundaries b in
-    lineBoundaries b.contents (min (len b.contents) thisEnd + 1)
-
 upLine :: EditorState -> EditorState
 upLine e =
   let b = getCurrentBuffer e
-      (lstart, _) = currentLineBoundaries b
-      (prevStart, prevEnd) = previousLineBoundaries b
-      realCol = b.point - lstart
-      nextPoint = if e.termWidth < realCol
-                  then b.point - e.termWidth
-                  else min prevEnd (prevStart + b.wantCol) in
-    updateCurrentBuffer (\x -> x { point = nextPoint }) e
+      (row, _, lns) = toMatrix e
+      -- newPoint = coordLoc lns (max 0 (row - 1), b.wantCol) in
+      newPoint = coordLoc lns (max 0 (row - 1), 0) in
+    updateCurrentBuffer (\x -> x { point = newPoint }) e
 
 downLine :: EditorState -> EditorState
 downLine e =
   let b = getCurrentBuffer e
-      (_, lend) = currentLineBoundaries b
-      (nextStart, nextEnd) = nextLineBoundaries b
-      -- realCol = b.point - lstart
-      nextPoint = if lend > e.termWidth + b.point
-                  then b.point + e.termWidth
-                  else min nextEnd (nextStart + b.wantCol) in
-    updateCurrentBuffer (\x -> x { point = nextPoint }) e
+      (row, _, lns) = toMatrix e
+      -- newPoint = coordLoc lns (min (length lns) (row + 1), b.wantCol) in
+      newPoint = coordLoc lns (min (length lns) (row + 1), 0) in
+    updateCurrentBuffer (\x -> x { point = newPoint }) e
 
 insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
@@ -210,9 +195,9 @@ editorInterpret e _ = return e
 -- this is in the IO monad so we can write out
 iNormal :: EditorState -> Event -> IO EditorState
 iNormal e (EvKey (KChar 'l') []) =
-  return $ updateCurrentBuffer (\b -> b { point = min (len b.contents) b.point + 1 }) e
+  return $ updateCurrentBuffer (\b -> b { point = min (len b.contents) (b.point + 1) }) e
 iNormal e (EvKey (KChar 'h') []) =
-  return $ updateCurrentBuffer (\b -> b { point = max 0 b.point - 1 }) e
+  return $ updateCurrentBuffer (\b -> b { point = max 0 (b.point - 1) }) e
 iNormal e (EvKey (KChar 'j') []) =
   return $ downLine e
 iNormal e (EvKey (KChar 'k') []) =
