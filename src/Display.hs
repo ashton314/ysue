@@ -25,7 +25,7 @@ theLoop Es.EditorState { Es.terminate = True } vty = shutdown vty
 theLoop editor vty = do
   displayEditor vty editor
   e <- nextEvent vty
-  nextState <- Es.editorInterpret editor e
+  nextState <- Es.editorInterpret (Es.clearFlash editor) e
   theLoop nextState vty
 
 displayEditor :: Vty -> Es.EditorState -> IO ()

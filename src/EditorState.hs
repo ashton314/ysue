@@ -12,6 +12,8 @@ module EditorState
   , findPoint
   , coordLoc
   , toScreenMatrix
+  , addFlash
+  , clearFlash
   , toLines) where
 
 import Rope
@@ -201,6 +203,12 @@ editorInterpret e@EditorState {mode = Normal} c = iNormal e c
 editorInterpret e@EditorState {mode = Insert} c = return $ iInsert e c
 editorInterpret e _ = return e
 
+addFlash :: String -> EditorState -> EditorState
+addFlash msg e = e { flashMessage = Just msg }
+
+clearFlash :: EditorState -> EditorState
+clearFlash e = e { flashMessage = Nothing }
+
 -- this is in the IO monad so we can write out
 iNormal :: EditorState -> Event -> IO EditorState
 iNormal e (EvKey (KChar 'l') []) =
@@ -221,14 +229,15 @@ iNormal e (EvKey (KChar 'q') []) =
   return $ e { terminate = True }
 iNormal e (EvKey (KChar 'i') []) =
   return $ e { mode = Insert }
-iNormal e _ = return e
+-- iNormal e _ = return e
+iNormal e k = return $ addFlash ("unknown key: " ++ show k) e
 
 iInsert :: EditorState -> Event -> EditorState
 iInsert e (EvKey (KChar c) []) = updateCurrentBuffer (insertChar c) e
 iInsert e (EvKey KEnter []) = updateCurrentBuffer (insertChar '\n') e
 iInsert e (EvKey KDel []) = updateCurrentBuffer delChar e
 iInsert e (EvKey KEsc []) = e { mode = Normal }
-iInsert e _ = e
+iInsert e k = addFlash ("unknown key: " ++ show k) e
 
 
 -- it would be really cool to have a diff function: I give it two Ropes and it gives me a patch
