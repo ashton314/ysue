@@ -196,7 +196,7 @@ insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
 
 delChar :: BufferUpdater
-delChar b = b { point = b.point - 1, dirty = True, contents = delAt b.contents b.point }
+delChar b = b { point = b.point - 1, dirty = True, contents = delAt b.contents $ b.point - 1 }
 
 editorInterpret :: EditorState -> Event -> IO EditorState
 editorInterpret e@EditorState {mode = Normal} c = iNormal e c
@@ -236,6 +236,7 @@ iInsert :: EditorState -> Event -> EditorState
 iInsert e (EvKey (KChar c) []) = updateCurrentBuffer (insertChar c) e
 iInsert e (EvKey KEnter []) = updateCurrentBuffer (insertChar '\n') e
 iInsert e (EvKey KDel []) = updateCurrentBuffer delChar e
+iInsert e (EvKey KBS []) = updateCurrentBuffer delChar e
 iInsert e (EvKey KEsc []) = e { mode = Normal }
 iInsert e k = addFlash ("unknown key: " ++ show k) e
 

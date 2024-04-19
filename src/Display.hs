@@ -37,6 +37,7 @@ displayEditor vty e = do
       footer = string (defAttr `withStyle` reverseVideo) (statusString pointRow pointCol e) in
     do
       update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) (fromMaybe (replicate tw ' ') (Es.flashMessage e))
+      refresh vty
       setCursorPos (outputIface vty) pointCol pointRow
       showCursor (outputIface vty)
 
@@ -56,7 +57,7 @@ statusString row col e =
   ++ ")  <"
   ++ show (Es.mode e)
   ++ ">"
-  ++ " wantCol: " ++ show (Es.wantCol $ Es.visitingBuffer e)
+  -- ++ " wantCol: " ++ show (Es.wantCol $ Es.visitingBuffer e)
   ++ replicate (Es.termWidth e) ' '
 
 loremRope :: Rope
