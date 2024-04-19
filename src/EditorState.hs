@@ -196,6 +196,7 @@ insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
 
 delChar :: BufferUpdater
+delChar b@BufferState { point = 0 } = b
 delChar b = b { point = b.point - 1, dirty = True, contents = delAt b.contents $ b.point - 1 }
 
 editorInterpret :: EditorState -> Event -> IO EditorState
