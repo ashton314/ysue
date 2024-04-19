@@ -11,9 +11,6 @@ module EditorState
   , pointRow
   , findPoint
   , coordLoc
-  -- , currentLineBoundaries
-  -- , previousLineBoundaries
-  -- , nextLineBoundaries
   , toScreenMatrix
   , toLines) where
 
@@ -73,9 +70,12 @@ freshBuffer buf_name s = BufferState
   , name = buf_name
   , contents = fromString s }
 
+scratchMessage :: String
+scratchMessage = "Welcome to ysue\n\nYou know you should really be using Emacs, right?"
+
 freshEditor :: Int -> Int -> EditorState
 freshEditor tw th =
-  let b1 = freshBuffer "scratch" "Welcome to ysue\n\nYou know you should really be using Emacs, right?" in
+  let b1 = freshBuffer "scratch" scratchMessage in
     EditorState { buffers=[b1]
                 , currentBuffer=0
                 , termWidth=tw
@@ -110,6 +110,11 @@ pointRow e =
   b.point `div` e.termWidth
   where b = visitingBuffer e
 
+strToLines :: String -> [(Int, String)]
+strToLines str =
+  reverse $ snd $ foldl (\(pos, acc) l -> (pos + length l, (pos, l):acc)) (0, []) ls
+  where ls = map (++ "\n") $ lines str
+
 bufferToLines :: Int -> BufferState -> [(Int, String)]
 bufferToLines chars s =
   reverse $ snd $ foldl (\(pos, acc) l -> (pos + length l, (pos, l):acc)) (s.screen_top, []) ls
@@ -121,20 +126,19 @@ wrapLines ((ls,str):xs) width
   | length str > width = (ls, take width str++"$"):wrapLines ((ls+width, drop width str):xs) width
   | otherwise = (ls, str):wrapLines xs width
 
-toMatrix :: EditorState -> (Int, Int, [(Int, String)])
+toMatrix :: EditorState -> [(Int, String)]
 toMatrix e =
-  let lineData = bufferToLines (e.termWidth * e.termHeight) (visitingBuffer e)
-      -- a value that is very far away from the point (for finding cursor)
-      farAway = (visitingBuffer e).point + (e.termWidth * e.termHeight)
-      wrapped = take (e.termHeight - 2) $ wrapLines lineData (e.termWidth - 1) ++ repeat (farAway, "~")
-      (row, col) = findPoint (visitingBuffer e).point wrapped in
-    (row, col, wrapped)
+  let lineData = bufferToLines (e.termWidth * e.termHeight) (visitingBuffer e) in
+    wrapLines lineData (e.termWidth - 1)
 
 -- editor state -> cursor row, cursor col, buffer matrix
 toScreenMatrix :: EditorState -> (Int, Int, [String])
 toScreenMatrix e =
-  let (r, c, w) = toMatrix e in
-    (r, c, map snd w)
+  let wrapped = toMatrix e
+      farAway = (visitingBuffer e).point + (e.termWidth * e.termHeight)
+      padded = take (e.termHeight - 2) $ wrapped ++ repeat (farAway, "~")
+      (row, col) = findPoint (visitingBuffer e).point padded in
+    (row, col, map snd padded)
 
 -- go from point -> x,y position in buffer
 findPoint :: Int -> [(Int, String)] -> (Int, Int)
@@ -146,7 +150,8 @@ findPoint p ls =
 coordLoc :: [(Int, String)] -> (Int, Int) -> Int
 coordLoc lns (row, col) =
   let (rowStart, theRow) = lns !! row in
-    rowStart + min (length theRow) col
+    -- subtract 1 because all rows should have 0 on the end
+    rowStart + max 0 (min (length theRow - 1) col)
 
 findCurrentRow :: Int -> Int -> Int -> [(Int, String)] -> (Int, Int)
 findCurrentRow _ rowNum rStart [] = (rowNum, rStart)
@@ -168,17 +173,21 @@ toLines s = map snd $ bufferToLines (s.termWidth * s.termHeight) (visitingBuffer
 upLine :: EditorState -> EditorState
 upLine e =
   let b = getCurrentBuffer e
-      (row, _, lns) = toMatrix e
-      -- newPoint = coordLoc lns (max 0 (row - 1), b.wantCol) in
-      newPoint = coordLoc lns (max 0 (row - 1), 0) in
+      lns = toMatrix e
+      farAway = (visitingBuffer e).point + (e.termWidth * e.termHeight)
+      (row, _) = findCurrentRow b.point 0 0 $ lns ++ [(farAway, "~")]
+      newPoint = coordLoc lns (max 0 (row - 1), b.wantCol) in
+      -- newPoint = coordLoc lns (max 0 (row - 1), 0) in
     updateCurrentBuffer (\x -> x { point = newPoint }) e
 
 downLine :: EditorState -> EditorState
 downLine e =
   let b = getCurrentBuffer e
-      (row, _, lns) = toMatrix e
-      -- newPoint = coordLoc lns (min (length lns) (row + 1), b.wantCol) in
-      newPoint = coordLoc lns (min (length lns) (row + 1), 0) in
+      lns = toMatrix e
+      farAway = (visitingBuffer e).point + (e.termWidth * e.termHeight)
+      (row, _) = findCurrentRow b.point 0 0 $ lns ++ [(farAway, "~")]
+      newPoint = coordLoc lns (min (length lns - 1) (row + 1), b.wantCol) in
+      -- newPoint = coordLoc lns (min (length lns - 1) (row + 1), 0) in
     updateCurrentBuffer (\x -> x { point = newPoint }) e
 
 insertChar :: Char -> BufferUpdater
@@ -195,9 +204,15 @@ editorInterpret e _ = return e
 -- this is in the IO monad so we can write out
 iNormal :: EditorState -> Event -> IO EditorState
 iNormal e (EvKey (KChar 'l') []) =
-  return $ updateCurrentBuffer (\b -> b { point = min (len b.contents) (b.point + 1) }) e
+  let (_, rowStart) = findCurrentRow (visitingBuffer e).point 0 0 (toMatrix e) in
+    return $
+    updateCurrentBuffer (\b -> b { point = min (len b.contents) (b.point + 1)
+                                 , wantCol = max 0 (b.point + 1 - rowStart)}) e
 iNormal e (EvKey (KChar 'h') []) =
-  return $ updateCurrentBuffer (\b -> b { point = max 0 (b.point - 1) }) e
+  let (_, rowStart) = findCurrentRow (visitingBuffer e).point 0 0 (toMatrix e) in
+    return $
+    updateCurrentBuffer (\b -> b { point = max 0 (b.point - 1)
+                                 , wantCol = max 0 (b.point - 1 - rowStart)}) e
 iNormal e (EvKey (KChar 'j') []) =
   return $ downLine e
 iNormal e (EvKey (KChar 'k') []) =

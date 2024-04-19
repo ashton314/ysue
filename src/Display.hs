@@ -45,7 +45,9 @@ statusString row col e =
   take (Es.termWidth e)
   "-:"
   ++ (if Es.dirty $ Es.visitingBuffer e then "**" else "--")
-  ++ " "
+  ++ "  "
+  ++ Es.name (Es.visitingBuffer e)
+  ++ "    "
   ++ show (Es.point $ Es.visitingBuffer e)
   ++ ":("
   ++ show row
@@ -54,9 +56,7 @@ statusString row col e =
   ++ ")  <"
   ++ show (Es.mode e)
   ++ ">"
-  -- ++ " " ++ show (Es.previousLineBoundaries (Es.visitingBuffer e))
-  -- ++ " " ++ show (Es.currentLineBoundaries (Es.visitingBuffer e))
-  -- ++ " " ++ show (Es.nextLineBoundaries (Es.visitingBuffer e))
+  ++ " wantCol: " ++ show (Es.wantCol $ Es.visitingBuffer e)
   ++ replicate (Es.termWidth e) ' '
 
 loremRope :: Rope
