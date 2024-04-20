@@ -19,6 +19,7 @@ module EditorState
 
 import Rope
 import Graphics.Vty.Input.Events
+import Data.Maybe (fromMaybe)
 
 data EditorMode
   = Insert
@@ -195,6 +196,23 @@ downLine e =
       -- newPoint = coordLoc lns (min (length lns - 1) (row + 1), 0) in
     updateCurrentBuffer (\x -> x { point = newPoint }) e
 
+-- move further down in the buffer
+scrollLineDown :: EditorState -> EditorState
+scrollLineDown e =
+  let b = getCurrentBuffer e in
+    case toMatrix e of
+      _:(nextStart, _):_ -> updateCurrentBuffer (\x -> x { screen_top = nextStart }) e
+      _ -> e
+
+scrollLineUp :: EditorState -> EditorState
+scrollLineUp e =
+  let b = getCurrentBuffer e in
+    if b.screen_top > 0
+    then updateCurrentBuffer (\x -> x { screen_top =
+                                        fromMaybe 0
+                                        (isearchCharBack (b.screen_top - 1) '\n' b.contents)}) e
+    else e
+
 insertChar :: Char -> BufferUpdater
 insertChar c b = b { point = b.point + 1, dirty = True, contents = insAt b.contents b.point [c] }
 
@@ -236,6 +254,10 @@ iNormal e (EvKey (KChar 'i') []) =
   return $ e { mode = Insert }
 iNormal e (EvKey (KChar ':') []) =
   return $ e { mode = ReadCommand "" }
+iNormal e (EvKey (KChar 'e') [MCtrl]) =
+  return $ scrollLineDown e
+iNormal e (EvKey (KChar 'y') [MCtrl]) =
+  return $ scrollLineUp e
 iNormal e k = return $ addFlash ("unknown key: " ++ show k) e
 
 iInsert :: EditorState -> Event -> EditorState
