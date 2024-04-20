@@ -19,7 +19,8 @@ module EditorState
 
 import Rope
 import Graphics.Vty.Input.Events
-import Data.Maybe (fromMaybe)
+-- import Data.Maybe (fromMaybe)
+-- import Data.Functor
 
 data EditorMode
   = Insert
@@ -145,6 +146,7 @@ toScreenMatrix e =
     case mode e of
       ReadCommand cmd -> (e.termHeight - 1, 1 + length cmd, map snd padded)
       _ -> (row, col, map snd padded)
+      -- _ -> (row, col, map (\l -> show (fst l) ++ ": " ++ snd l) padded)
 
 -- go from point -> x,y position in buffer
 findPoint :: Int -> [(Int, String)] -> (Int, Int)
@@ -209,8 +211,7 @@ scrollLineUp e =
   let b = getCurrentBuffer e in
     if b.screen_top > 0
     then updateCurrentBuffer (\x -> x { screen_top =
-                                        fromMaybe 0
-                                        (isearchCharBack (b.screen_top - 1) '\n' b.contents)}) e
+                                        maybe 0 (1 +) (isearchCharBack (b.screen_top - 2) '\n' b.contents)}) e
     else e
 
 insertChar :: Char -> BufferUpdater
