@@ -19,6 +19,7 @@ module EditorState
 
 import Rope
 import Graphics.Vty.Input.Events
+import System.Directory
 -- import Data.Maybe (fromMaybe)
 -- import Data.Functor
 
@@ -284,7 +285,8 @@ iReadCommand e k = return $ addFlash ("unknown key: " ++ show k) e
 iExCmd :: String -> EditorState -> IO EditorState
 iExCmd "q" e = return $ e { terminate = True }
 iExCmd ('e':' ':fileName) e = do
-  fileContents <- readFile fileName
+  existsp <- doesFileExist fileName
+  fileContents <- if existsp then readFile fileName else return ""
   let newBuff = (freshBuffer fileName fileContents) { file = Just fileName, name = fileName } in
     return $ e { buffers = newBuff:e.buffers, mode = Normal }
 

@@ -18,7 +18,7 @@ runner = do
   let editor = Es.freshEditor termWidth termHeight
   setWindowTitle vty "ysue"
   theLoop editor vty
-  print "Thanks for using ysue!"
+  putStrLn "Thanks for using ysue!"
 
 theLoop :: Es.EditorState -> Vty -> IO ()
 theLoop Es.EditorState { Es.terminate = True } vty = shutdown vty
