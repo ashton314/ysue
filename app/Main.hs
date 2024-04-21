@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+-- import Lib
 import Display (runner)
 
 main :: IO ()

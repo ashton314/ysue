@@ -39,7 +39,7 @@ data BufferState = BufferState
   , file :: Maybe String
   , name :: String
   , contents :: Rope
-  } deriving (Show)
+  }
 
 data EditorState = EditorState
   { buffers :: [BufferState]
@@ -50,7 +50,7 @@ data EditorState = EditorState
   , terminate :: Bool
   , refresh :: Bool
   , flashMessage :: Maybe String
-  } deriving (Show)
+  }
 
 -- Future: add syntax highlighting
 -- data Prop
@@ -118,10 +118,10 @@ pointRow e =
   b.point `div` e.termWidth
   where b = visitingBuffer e
 
-strToLines :: String -> [(Int, String)]
-strToLines str =
-  reverse $ snd $ foldl (\(pos, acc) l -> (pos + length l, (pos, l):acc)) (0, []) ls
-  where ls = map (++ "\n") $ lines str
+-- strToLines :: String -> [(Int, String)]
+-- strToLines str =
+--   reverse $ snd $ foldl (\(pos, acc) l -> (pos + length l, (pos, l):acc)) (0, []) ls
+--   where ls = map (++ "\n") $ lines str
 
 bufferToLines :: Int -> BufferState -> [(Int, String)]
 bufferToLines chars s =
@@ -204,10 +204,9 @@ downLine e =
 -- move further down in the buffer
 scrollLineDown :: EditorState -> EditorState
 scrollLineDown e =
-  let b = getCurrentBuffer e in
-    case toMatrix e of
-      _:(nextStart, _):_ -> (updateCurrentBuffer (\x -> x { screen_top = nextStart }) e) { refresh = True }
-      _ -> e
+  case toMatrix e of
+    _:(nextStart, _):_ -> (updateCurrentBuffer (\x -> x { screen_top = nextStart }) e) { refresh = True }
+    _ -> e
 
 scrollLineUp :: EditorState -> EditorState
 scrollLineUp e =
