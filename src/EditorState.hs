@@ -47,6 +47,7 @@ data EditorState = EditorState
   , termHeight :: Int
   , mode :: EditorMode
   , terminate :: Bool
+  , refresh :: Bool
   , flashMessage :: Maybe String
   } deriving (Show)
 
@@ -86,6 +87,7 @@ freshEditor tw th =
                 , termWidth=tw
                 , termHeight=th
                 , mode=Normal
+                , refresh = True
                 , terminate = False
                 , flashMessage = Nothing}
 
@@ -203,15 +205,16 @@ scrollLineDown :: EditorState -> EditorState
 scrollLineDown e =
   let b = getCurrentBuffer e in
     case toMatrix e of
-      _:(nextStart, _):_ -> updateCurrentBuffer (\x -> x { screen_top = nextStart }) e
+      _:(nextStart, _):_ -> (updateCurrentBuffer (\x -> x { screen_top = nextStart }) e) { refresh = True }
       _ -> e
 
 scrollLineUp :: EditorState -> EditorState
 scrollLineUp e =
   let b = getCurrentBuffer e in
     if b.screen_top > 0
-    then updateCurrentBuffer (\x -> x { screen_top =
-                                        maybe 0 (1 +) (isearchCharBack (b.screen_top - 2) '\n' b.contents)}) e
+    then (updateCurrentBuffer (\x -> x { screen_top =
+                                        maybe 0 (1 +) (isearchCharBack (b.screen_top - 2) '\n' b.contents)}) e)
+         {refresh = True}
     else e
 
 insertChar :: Char -> BufferUpdater
@@ -282,6 +285,36 @@ iExCmd :: String -> EditorState -> IO EditorState
 iExCmd "q" e = return $ e { terminate = True }
 iExCmd ('e':' ':fileName) e = do
   fileContents <- readFile fileName
-  let newBuff = (freshBuffer fileName fileContents) { file = Just fileName } in
+  let newBuff = (freshBuffer fileName fileContents) { file = Just fileName, name = fileName } in
     return $ e { buffers = newBuff:e.buffers, mode = Normal }
+
+iExCmd "w" e =
+  let b = visitingBuffer e
+      txt = toString b.contents in
+    case b.file of
+      Just fileName -> do
+        writeFile fileName txt
+        return $ addFlash ("file written to " ++ fileName)
+          $ (updateCurrentBuffer (\bb -> bb { dirty = False }) e) { mode = Normal }
+      _ -> do
+        return $ addFlash "error: no file for buffer" $ e { mode = Normal }
+
+iExCmd ('w':' ':fileName) e =
+  let txt = toString (visitingBuffer e).contents
+      e'  = updateCurrentBuffer (\b -> b { file = Just fileName
+                                         , name = fileName
+                                         , dirty = False }) e in do
+    writeFile fileName txt
+    return $ addFlash ("file written to " ++ fileName) $ e' { mode = Normal }
+
+iExCmd "k" e =
+  case e.buffers of
+    [] -> return $ e { buffers = [freshBuffer "scratch" "new buffer"], mode = Normal }
+    [_] -> return $ addFlash "attempted to delete sole buffer" $ e { mode = Normal }
+    b:bs -> return $ addFlash ("deleted buffer " ++ b.name) e { buffers = bs, mode = Normal }
+
+iExCmd ('n':' ':buffName) e =
+  return $ addFlash ("new buffer " ++ buffName) e { buffers = freshBuffer buffName "":e.buffers
+                                                  , mode = Normal }
+
 iExCmd cmd e = return $ addFlash ("bad command: " ++ cmd) $ e { mode = Normal }

@@ -22,6 +22,7 @@ runner = do
 
 theLoop :: Es.EditorState -> Vty -> IO ()
 theLoop Es.EditorState { Es.terminate = True } vty = shutdown vty
+theLoop e@Es.EditorState { Es.refresh = True } vty = do refresh vty; theLoop e { Es.refresh = False } vty
 theLoop editor vty = do
   displayEditor vty editor
   e <- nextEvent vty
@@ -36,7 +37,8 @@ displayEditor vty e = do
   (tw, _) <- displayBounds (outputIface vty)
   let (pointRow, pointCol, lns) = Es.toScreenMatrix e
       strings = map (string (defAttr `withForeColor` white)) lns
-      img = foldl vertJoin emptyImage strings
+      -- img = foldl vertJoin emptyImage strings
+      img = foldl1 vertJoin strings
       footer = string (defAttr `withStyle` reverseVideo) (statusString pointRow pointCol e) in
     do
       update vty $ picForImage $ img <-> footer <-> string (defAttr `withForeColor` white) (miniBuffer tw e)
@@ -61,7 +63,9 @@ statusString row col e =
   ++ (if Es.dirty $ Es.visitingBuffer e then "**" else "--")
   ++ "  "
   ++ Es.name (Es.visitingBuffer e)
-  ++ "    "
+  ++ "  "
+  ++ "(" ++ show (Es.currentBuffer e) ++ "/" ++ show (length $ Es.buffers e) ++ ")"
+  ++ "  "
   ++ show (Es.point $ Es.visitingBuffer e)
   ++ ":("
   ++ show row
@@ -70,7 +74,7 @@ statusString row col e =
   ++ ")  <"
   ++ show (Es.mode e)
   ++ ">"
-  -- ++ " wantCol: " ++ show (Es.wantCol $ Es.visitingBuffer e)
+  ++ " top: " ++ show (Es.screen_top $ Es.visitingBuffer e)
   ++ replicate (Es.termWidth e) ' '
 
 -- loremRope :: Rope
