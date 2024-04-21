@@ -1,4 +1,6 @@
 #+title: Ysue
+#+author: Ashton Wiersdorf
+#+latex_header: \usepackage{/Users/ashton/Projects/latex-styles/concoursepretty}
 
 ysue - You Should be Using Emacs
 
@@ -82,7 +84,8 @@ Ysue uses a [[https://en.wikipedia.org/wiki/Rope_(data_structure)][rope]] under 
 
 I ran some benchmarks comparing how a rope vs. a naïve string implementation handle a series of random edits. Results:
 
-[[benchmark_results.png]]
+#+caption: Runtimes of performing $n$ random text editing operations; orange is a rope, blue is a naïve string. Naïve string growth is $O(2^n)$, while rope stays $O(\log(n))$.
+[[./benchmark_results.png]]
 
 Ropes are neat because they leverage structural sharing: i.e. if you edit some text, most of the text that doesn't get edited will stay the same in memory. The garbage collector will clean up the old nodes eventually. However, if you hang onto those nodes (e.g. in an undo stack) then they'll stay around as long as you need them to and they will always point to the same string.
 
@@ -100,7 +103,7 @@ MIT License
 
 * Author
 
-Ashton Wiersdorf https://lambdaland.org/
+Ashton Wiersdorf ◊ https://lambdaland.org/
 
 # Local Variables:
 # jinx-local-words: "Ysue"
